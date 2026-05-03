@@ -34,13 +34,12 @@ export const COLLECTION_DEFS = {
     pmqlTemplate: 'data.frm_suscriptor_activo_flag = "SI"',
   } satisfies CollectionDef,
 
-  // Actividad NAIC / CIIU (DataSource 7) — depende del país
+  // Actividad NAIC / CIIU — colección 6, filtro estático Colombia
   actividadNaic: {
-    id: 7,
+    id: 6,
     labelField: 'data.frm_actividad',
     valueField: 'data.frm_codigo',
-    dependsOn: 'frm_gen_pais',
-    pmqlTemplate: 'data.frm_pais = "{{frm_gen_pais}}"',
+    pmqlTemplate: 'data.frm_pais = "CO"',
   } satisfies CollectionDef,
 
   // Departamentos Colombia (DataSource 19)

@@ -219,10 +219,10 @@ function InfoTomador({
   return (
     <FormSection title="Información del Tomador">
       <div className="form-row cols-3 row-align-bottom">
-        <SelectField label="Tipo de documento" name="frm_tom_tipo_documento" control={form.control} rules={{ required: 'Campo requerido' }} options={OPTIONS.tipoDocumento} required error={fe('frm_tom_tipo_documento')} disabled={locked} />
-        <InputField label="Nro. de documento" registration={register('frm_tom_num_documento', { required: 'Campo requerido', minLength: { value: 5, message: 'Mínimo 5 caracteres' } })} type="text" required error={fe('frm_tom_num_documento')} readOnly={locked} />
+        <SelectField label="Tipo de documento" name="frm_tom_tipo_documento" control={form.control} rules={{ required: 'Campo requerido' }} options={OPTIONS.tipoDocumento} required error={fe('frm_tom_tipo_documento')} />
+        <InputField label="Nro. de documento" registration={register('frm_tom_num_documento', { required: 'Campo requerido', minLength: { value: 5, message: 'Mínimo 5 caracteres' } })} type="text" required error={fe('frm_tom_num_documento')} />
         <div className="form-group consultar-wrapper">
-          <button type="button" className="btn-consultar" onClick={onConsultar} disabled={tiaStatus === 'loading' || locked}>
+          <button type="button" className="btn-consultar" onClick={onConsultar} disabled={tiaStatus === 'loading'}>
             {tiaStatus === 'loading' ? '⏳ Consultando…' : '🔍 Consultar Cliente'}
           </button>
         </div>
@@ -312,10 +312,10 @@ function InfoAsegurado({
   return (
     <FormSection title="Datos del Asegurado">
       <div className="form-row cols-3 row-align-bottom">
-        <SelectField label="Tipo de documento" name="frm_aseg_tipo_documento" control={form.control} rules={{ required: 'Campo requerido' }} options={OPTIONS.tipoDocumento} required error={fe('frm_aseg_tipo_documento')} disabled={locked} />
-        <InputField label="Nro. de documento" registration={register('frm_aseg_num_documento', { required: 'Campo requerido', minLength: { value: 5, message: 'Mínimo 5 caracteres' } })} type="text" required error={fe('frm_aseg_num_documento')} readOnly={locked} />
+        <SelectField label="Tipo de documento" name="frm_aseg_tipo_documento" control={form.control} rules={{ required: 'Campo requerido' }} options={OPTIONS.tipoDocumento} required error={fe('frm_aseg_tipo_documento')} />
+        <InputField label="Nro. de documento" registration={register('frm_aseg_num_documento', { required: 'Campo requerido', minLength: { value: 5, message: 'Mínimo 5 caracteres' } })} type="text" required error={fe('frm_aseg_num_documento')} />
         <div className="form-group consultar-wrapper">
-          <button type="button" className="btn-consultar" onClick={onConsultar} disabled={tiaStatus === 'loading' || locked}>
+          <button type="button" className="btn-consultar" onClick={onConsultar} disabled={tiaStatus === 'loading'}>
             {tiaStatus === 'loading' ? '⏳ Consultando…' : '🔍 Consultar Cliente'}
           </button>
         </div>
@@ -362,8 +362,17 @@ function DatosCotizacion({ form }: { form: Form }) {
 
   const { options: naicOptions, loading: loadingNaic } = useCollection(
     COLLECTION_DEFS.actividadNaic,
-    { frm_gen_pais: w.frm_gen_pais }
+    {}  // PMQL estático "CO", watchValues vacío para activarlo
   );
+
+  // Auto-fill código y nombre al seleccionar la actividad NAIC
+  useEffect(() => {
+    if (!w.frm_cot_actividad_naic) return;
+    setValue('frm_cot_codigo_naic', w.frm_cot_actividad_naic);
+    const opt = naicOptions.find(o => o.value === w.frm_cot_actividad_naic);
+    if (opt) setValue('frm_cot_nombre_ciiu', opt.label);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [w.frm_cot_actividad_naic]);
 
   useEffect(() => {
     if (!w.frm_cot_fecha_inicio_vigencia) return;
@@ -504,6 +513,16 @@ export default function SolicitudCotizacionCuw() {
       }
     });
   }, [task, form]);
+
+  // Al cambiar el número de documento, limpiar el estado TIA para poder consultar otro
+  const tomDoc = form.watch('frm_tom_num_documento');
+  const asegDoc = form.watch('frm_aseg_num_documento');
+  useEffect(() => {
+    setTomadorTia('idle');
+  }, [tomDoc]);
+  useEffect(() => {
+    setAseguradoTia('idle');
+  }, [asegDoc]);
 
   const handleConsultar = async (prefix: 'frm_tom' | 'frm_aseg', setStatus: (s: TiaStatus) => void) => {
     const tipoDoc = form.getValues(`${prefix}_tipo_documento` as keyof SolicitudCotizacionFormData) as string ?? '';
