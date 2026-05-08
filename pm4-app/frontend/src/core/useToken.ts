@@ -15,3 +15,8 @@ export function useTaskId(): string {
     ''
   );
 }
+
+export function useCaseId(): string {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('case_id') ?? import.meta.env.VITE_CASE_ID ?? '';
+}

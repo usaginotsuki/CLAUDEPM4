@@ -48,6 +48,48 @@ router.put('/tasks/:id', (req, res) => pm4Request('PUT', `/tasks/${req.params.id
 // Requests (casos)
 router.get('/requests/:id', (req, res) => pm4Request('GET', `/requests/${req.params.id}`, req, res));
 
+// Resolver task activo a partir de un case_id (request_id)
+router.get('/cases/:case_id/task', async (req, res) => {
+  const token = getToken(req);
+  const base = process.env.PM4_BASE_URL;
+  const caseId = req.params.case_id;
+
+  try {
+    // Buscar tareas del caso — probamos PMQL con request_id numérico
+    const response = await axios.get(`${base}/api/1.0/tasks`, {
+      params: {
+        pmql: `process_request_id = ${caseId}`,
+        per_page: 100,
+        include: 'data',
+      },
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    });
+
+    console.log(`[cases] PM4 tasks response status:`, response.status);
+    console.log(`[cases] Total tasks encontradas:`, response.data?.meta?.total ?? response.data?.data?.length);
+
+    const tasks: Record<string, unknown>[] = response.data?.data ?? [];
+
+    // Filtrar la activa (status ACTIVE o IN_PROGRESS según PM4)
+    const activeTask = tasks.find(t =>
+      ['ACTIVE', 'OPEN', 'IN_PROGRESS'].includes(String(t['status'] ?? '').toUpperCase())
+    ) ?? tasks[0];
+
+    if (!activeTask) {
+      res.status(404).json({ message: `No hay tarea activa para el caso ${caseId}` });
+      return;
+    }
+
+    console.log(`[cases] caso ${caseId} → task_id ${activeTask['id']} status=${activeTask['status']}`);
+    res.json(activeTask);
+  } catch (err) {
+    const e = err as AxiosError;
+    const status = e.response?.status ?? 500;
+    console.error(`[cases] ERROR:`, e.response?.data ?? e.message);
+    res.status(status).json(e.response?.data ?? { message: e.message });
+  }
+});
+
 // Processes
 router.get('/start_processes', (req, res) => pm4Request('GET', '/start_processes', req, res));
 router.post('/process_events/:process_id', (req, res) =>
