@@ -177,6 +177,8 @@
   height: auto;
 }
 
+.form-subsection--exportaciones { margin-top: 16px; }
+
 /* Banners TIA */
 .tia-banner {
   display: flex;
@@ -202,3 +204,81 @@
   margin-left: auto;
 }
 .btn-crear-cliente:hover { background: #eff6ff; }
+
+/* =====================================================
+   Record list tables
+   ===================================================== */
+.record-table-header { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+
+.btn-agregar {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 7px 16px; border-radius: 5px; font-size: 13px;
+  font-weight: 600; border: 1px solid var(--zurich-blue);
+  background: var(--zurich-blue); color: #fff; cursor: pointer;
+  white-space: nowrap; transition: background .2s;
+}
+.btn-agregar:hover { background: #1a5899; }
+
+.record-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.record-table th {
+  background: #f3f4f6;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--zurich-border);
+  font-weight: 600;
+  color: #374151;
+}
+.record-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+.record-table tbody tr:hover { background: #f9fafb; }
+.record-table .col-opcion { color: var(--zurich-blue); font-weight: 500; }
+.record-empty { text-align: center; color: #9ca3af; padding: 24px; }
+
+.btn-icon {
+  background: none; border: none; cursor: pointer;
+  font-size: 15px; padding: 2px 6px; opacity: .7;
+}
+.btn-icon:hover { opacity: 1; }
+
+.record-validation-msg {
+  text-align: right; font-size: 12px; color: var(--zurich-red); margin-top: 8px;
+}
+.record-validation-msg strong { font-weight: 700; }
+
+/* =====================================================
+   Modal
+   ===================================================== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal-dialog {
+  background: #fff; border-radius: 8px; width: 560px; max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--zurich-border);
+}
+.modal-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: #111827; }
+.modal-close {
+  background: none; border: none; font-size: 22px; cursor: pointer;
+  color: #6b7280; line-height: 1; padding: 0 4px;
+}
+.modal-close:hover { color: #111827; }
+.modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 12px 20px; border-top: 1px solid var(--zurich-border);
+}
+
+.btn-cancelar {
+  padding: 8px 20px; border-radius: 5px; border: 1px solid #9ca3af;
+  background: #6b7280; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.btn-cancelar:hover { background: #4b5563; }
+
+.btn-aceptar, .btn-guardar {
+  padding: 8px 20px; border-radius: 5px; border: none;
+  background: var(--zurich-blue); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.btn-aceptar:hover, .btn-guardar:hover { background: #1a5899; }

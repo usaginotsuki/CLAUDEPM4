@@ -1,0 +1,371 @@
+﻿[
+    {
+        "icon":  "fas fa-angle-double-down",
+        "name":  "frm_exportacion_pais",
+        "label":  "País",
+        "helper":  null,
+        "options":  {
+                        "key":  "value",
+                        "value":  "content",
+                        "dataName":  "response",
+                        "jsonData":  null,
+                        "renderAs":  "dropdown",
+                        "editIndex":  null,
+                        "pmqlQuery":  null,
+                        "dataSource":  "collection",
+                        "optionsList":  [
+
+                                        ],
+                        "removeIndex":  null,
+                        "showRenderAs":  false,
+                        "showJsonEditor":  false,
+                        "showOptionCard":  false,
+                        "selectedOptions":  [
+
+                                            ],
+                        "allowMultiSelect":  false,
+                        "defaultOptionKey":  false,
+                        "optionsListExtra":  [
+
+                                             ],
+                        "collectionOptions":  {
+                                                  "pmql":  null,
+                                                  "unique":  true,
+                                                  "labelField":  "data.pais_reg_pais",
+                                                  "valueField":  "id",
+                                                  "collectionId":  36,
+                                                  "ariaLabelField":  null
+                                              },
+                        "showRemoveWarning":  false,
+                        "valueTypeReturned":  "single",
+                        "selectedDataSource":  null
+                    },
+        "readonly":  false,
+        "validation":  [
+                           {
+                               "value":  "required",
+                               "helper":  "Comprueba si la longitud de la representación de cadena del valor es \u003e",
+                               "content":  "obligatorio"
+                           }
+                       ],
+        "placeholder":  null,
+        "rootElement":  "response",
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "dataSourceUrl":  null,
+        "dataSourceEndpoint":  null
+    },
+    {
+        "icon":  "far fa-square",
+        "name":  "frm_exportacion_pais_label",
+        "type":  "text",
+        "label":  "País (label)",
+        "helper":  null,
+        "readonly":  true,
+        "dataFormat":  "string",
+        "validation":  [
+
+                       ],
+        "placeholder":  null,
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "conditionalHide":  "false"
+    },
+    {
+        "icon":  "far fa-square",
+        "name":  "frm_exportacion_region_label",
+        "type":  "text",
+        "label":  "Región",
+        "helper":  null,
+        "readonly":  true,
+        "dataFormat":  "string",
+        "validation":  [
+
+                       ],
+        "placeholder":  null,
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "conditionalHide":  null
+    },
+    {
+        "icon":  "far fa-square",
+        "name":  "frm_exportacion_region_codigo",
+        "type":  "text",
+        "label":  "Región código",
+        "helper":  null,
+        "readonly":  true,
+        "dataFormat":  "string",
+        "validation":  [
+
+                       ],
+        "placeholder":  null,
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "conditionalHide":  "false"
+    },
+    {
+        "icon":  "far fa-square",
+        "name":  "frm_exportacion_ventas",
+        "type":  "text",
+        "label":  "Ventas",
+        "helper":  null,
+        "dataMask":  {
+                         "code":  "COP",
+                         "name":  "Colombian Peso",
+                         "format":  "#.###,##",
+                         "symbol":  null
+                     },
+        "readonly":  false,
+        "ariaLabel":  "testttt",
+        "dataFormat":  "currency",
+        "validation":  [
+                           {
+                               "value":  "required",
+                               "helper":  "Comprueba si la longitud de la representación de cadena del valor es \u003e",
+                               "content":  "obligatorio"
+                           },
+                           {
+                               "field":  "max:",
+                               "value":  "max:25",
+                               "helper":  null,
+                               "configs":  "",
+                               "content":  "longitud máx",
+                               "visible":  false
+                           }
+                       ],
+        "placeholder":  null,
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "conditionalHide":  "frm_cot_moneda_dup_exportaciones == \"COP\"",
+        "encryptedConfig":  {
+                                "encrypted":  false,
+                                "assignments":  {
+                                                    "users":  "",
+                                                    "groups":  ""
+                                                }
+                            }
+    },
+    {
+        "icon":  "far fa-square",
+        "name":  "frm_exportacion_ventas",
+        "type":  "text",
+        "label":  "Ventas",
+        "helper":  null,
+        "dataMask":  {
+                         "code":  "USD",
+                         "name":  "US Dollar",
+                         "format":  "#,###.##",
+                         "symbol":  "$"
+                     },
+        "readonly":  false,
+        "ariaLabel":  "testttt",
+        "dataFormat":  "currency",
+        "validation":  [
+                           {
+                               "value":  "required",
+                               "helper":  "Comprueba si la longitud de la representación de cadena del valor es \u003e",
+                               "content":  "obligatorio"
+                           },
+                           {
+                               "field":  "max:",
+                               "value":  "max:25",
+                               "helper":  null,
+                               "configs":  "",
+                               "content":  "longitud máx",
+                               "visible":  false
+                           }
+                       ],
+        "placeholder":  null,
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "conditionalHide":  "frm_cot_moneda_dup_exportaciones == \"USD\"",
+        "encryptedConfig":  {
+                                "encrypted":  false,
+                                "assignments":  {
+                                                    "users":  "",
+                                                    "groups":  ""
+                                                }
+                            }
+    },
+    {
+        "icon":  "far fa-square",
+        "name":  "frm_exportacion_ventas",
+        "type":  "text",
+        "label":  "Ventas",
+        "helper":  null,
+        "dataMask":  {
+                         "code":  "EUR",
+                         "name":  "Euro",
+                         "format":  "#,###.##",
+                         "symbol":  null
+                     },
+        "readonly":  false,
+        "ariaLabel":  "testttt",
+        "dataFormat":  "currency",
+        "validation":  [
+                           {
+                               "value":  "required",
+                               "helper":  "Comprueba si la longitud de la representación de cadena del valor es \u003e",
+                               "content":  "obligatorio"
+                           },
+                           {
+                               "field":  "max:",
+                               "value":  "max:25",
+                               "helper":  null,
+                               "configs":  "",
+                               "content":  "longitud máx",
+                               "visible":  false
+                           }
+                       ],
+        "placeholder":  null,
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "conditionalHide":  "frm_cot_moneda_dup_exportaciones == \"EUR\"",
+        "encryptedConfig":  {
+                                "encrypted":  false,
+                                "assignments":  {
+                                                    "users":  "",
+                                                    "groups":  ""
+                                                }
+                            }
+    },
+    {
+        "icon":  "far fa-square",
+        "name":  "frm_exportacion_ventas_formateado",
+        "type":  "text",
+        "label":  "Ventas (formateado)",
+        "helper":  null,
+        "dataMask":  {
+                         "code":  "EUR",
+                         "name":  "Euro",
+                         "format":  "#,###.##",
+                         "symbol":  null
+                     },
+        "readonly":  true,
+        "ariaLabel":  "testttt",
+        "dataFormat":  "string",
+        "validation":  [
+                           {
+                               "value":  "required",
+                               "helper":  "Comprueba si la longitud de la representación de cadena del valor es \u003e",
+                               "content":  "obligatorio"
+                           }
+                       ],
+        "placeholder":  null,
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "conditionalHide":  "false",
+        "encryptedConfig":  {
+                                "encrypted":  false,
+                                "assignments":  {
+                                                    "users":  "",
+                                                    "groups":  ""
+                                                }
+                            }
+    },
+    {
+        "icon":  "far fa-square",
+        "name":  "frm_exportacion_porcentaje",
+        "type":  "text",
+        "label":  "Porcentaje de ventas",
+        "helper":  null,
+        "readonly":  false,
+        "ariaLabel":  "testttt",
+        "dataFormat":  "percentage",
+        "validation":  [
+                           {
+                               "value":  "required",
+                               "helper":  "Comprueba si la longitud de la representación de cadena del valor es \u003e",
+                               "content":  "obligatorio"
+                           },
+                           {
+                               "field":  "between:",
+                               "value":  "between:1,100",
+                               "helper":  "El campo bajo validación debe tener un tamaño entre el mínimo y el máximo determinados.",
+                               "configs":  " ",
+                               "content":  "Entre mínimo y máximo",
+                               "visible":  false
+                           },
+                           {
+                               "field":  "regex:",
+                               "value":  "regex:^[1-9]\\d*$",
+                               "helper":  "El campo bajo validación debe coincidir con la expresión regular determinada.",
+                               "configs":  "",
+                               "content":  "Regex",
+                               "visible":  false
+                           }
+                       ],
+        "placeholder":  null,
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "encryptedConfig":  {
+                                "encrypted":  false,
+                                "assignments":  {
+                                                    "users":  "",
+                                                    "groups":  ""
+                                                }
+                            }
+    },
+    {
+        "icon":  "far fa-square",
+        "name":  "frm_exportacion_porcentaje_formateado",
+        "type":  "text",
+        "label":  "Porcentaje de ventas (formateado)",
+        "helper":  null,
+        "readonly":  true,
+        "ariaLabel":  "testttt",
+        "dataFormat":  "string",
+        "validation":  [
+
+                       ],
+        "placeholder":  null,
+        "defaultValue":  {
+                             "mode":  "basic",
+                             "value":  null
+                         },
+        "conditionalHide":  "false",
+        "encryptedConfig":  {
+                                "encrypted":  false,
+                                "assignments":  {
+                                                    "users":  "",
+                                                    "groups":  ""
+                                                }
+                            }
+    },
+    {
+        "id":  3,
+        "name":  "frm_exportacion_porcentaje_formateado",
+        "type":  "javascript",
+        "order":  3,
+        "byPass":  false,
+        "formula":  "const raw = this.frm_exportacion_porcentaje;\r\n  if (raw == null || raw === \"\") return \"\";\r\n\r\n  let s = String(raw).trim().replace(/\\s/g, \"\").replace(/%/g, \"\");\r\n\r\n  s = s.replace(\",\", \".\");\r\n\r\n  s = s.replace(/[^0-9.-]/g, \"\");\r\n\r\n  const n = Number(s);\r\n  if (!Number.isFinite(n)) return \"\";\r\n\r\n  return `${n} %`;",
+        "property":  "frm_exportacion_porcentaje_formateado"
+    },
+    {
+        "id":  8,
+        "name":  "frm_exportacion_ventas_formateado",
+        "type":  "javascript",
+        "order":  8,
+        "byPass":  false,
+        "formula":  "const raw = this.frm_exportacion_ventas;\r\n  if (raw == null || raw === \"\") return \"\";\r\n\r\n  let s = String(raw).trim().replace(/\\s/g, \"\").replace(/\\$/g, \"\");\r\n\r\n  if (s.includes(\".\")) {\r\n    s = s.split(\".\")[0];\r\n  } else {\r\n    if (/,(\\d{1,6})$/.test(s)) {\r\n      s = s.replace(/,(\\d{1,6})$/, \"\");\r\n    }\r\n  }\r\n\r\n  s = s.replace(/[^\\d-]/g, \"\");\r\n  if (!s || s === \"-\") return \"\";\r\n\r\n  const negative = s.startsWith(\"-\");\r\n  const digits = negative ? s.slice(1) : s;\r\n\r\n  const formatted = digits.replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\");\r\n  return negative ? `-${formatted}` : formatted;",
+        "property":  "frm_exportacion_ventas_formateado"
+    }
+]

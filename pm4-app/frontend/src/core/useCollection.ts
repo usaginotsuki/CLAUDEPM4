@@ -32,8 +32,9 @@ function resolvePmql(template: string, values: Record<string, unknown>): string 
 export function useCollection(
   def: CollectionDef | null,
   watchValues?: Record<string, unknown>
-): { options: CollectionOption[]; loading: boolean } {
+): { options: CollectionOption[]; loading: boolean; rawMap: Record<string, Record<string, unknown>> } {
   const [options, setOptions] = useState<CollectionOption[]>([]);
+  const [rawMap, setRawMap] = useState<Record<string, Record<string, unknown>>>({});
   const [loading, setLoading] = useState(false);
 
   const dependsOnValue = def?.dependsOn ? watchValues?.[def.dependsOn] : undefined;
@@ -60,22 +61,24 @@ export function useCollection(
       .then((r) => {
         const records: Record<string, unknown>[] = r.data?.data ?? [];
         console.log(`[useCollection] id=${def.id} → ${records.length} registros`);
-        setOptions(
-          records
-            .map((rec) => ({
-              value: resolvePath(rec, def.valueField),
-              label: resolvePath(rec, def.labelField),
-            }))
-            .filter((o) => o.value !== '' && o.label !== '')
-        );
+        const mapped = records
+          .map((rec) => ({
+            value: resolvePath(rec, def.valueField),
+            label: resolvePath(rec, def.labelField),
+            rec,
+          }))
+          .filter((o) => o.value !== '' && o.label !== '');
+        setOptions(mapped.map(({ value, label }) => ({ value, label })));
+        setRawMap(Object.fromEntries(mapped.map(({ value, rec }) => [value, rec])));
       })
       .catch((e) => {
         console.error(`[useCollection] id=${def.id} error:`, e.message);
         setOptions([]);
+        setRawMap({});
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [def?.id, String(dependsOnValue)]);
 
-  return { options, loading };
+  return { options, loading, rawMap };
 }

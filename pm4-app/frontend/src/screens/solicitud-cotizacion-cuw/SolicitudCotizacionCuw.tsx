@@ -9,6 +9,9 @@ import SelectField from '../../components/fields/SelectField';
 import DateField from '../../components/fields/DateField';
 import { OPTIONS, COLLECTION_DEFS, SolicitudCotizacionFormData } from './variables';
 import pm4 from '../../api/pm4Client';
+import AseguradosAdicionales, { AseguradoAdicional } from './AseguradosAdicionales';
+import ValoresDeducibles, { ValorDeducible, INITIAL_VALORES } from './ValoresDeducibles';
+import DetalleExportaciones, { ExportacionRow } from './DetalleExportaciones';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -38,6 +41,72 @@ function fieldError(
   const isEmpty = value === '' || value === null || value === undefined;
   if (err.type === 'required' && isEmpty) return isSubmitted ? String(err.message) : undefined;
   return String(err.message);
+}
+
+// ---------------------------------------------------------------------------
+// Mappers al formato PM4
+// ---------------------------------------------------------------------------
+const ROW_IDS_VALORES = [
+  'aseguradores_Deducibles_Opc_01',
+  'aseguradores_Deducibles_Opc_02',
+  'aseguradores_Deducibles_Opc_03',
+  'aseguradores_Deducibles_Opc_04',
+  'aseguradores_Deducibles_Opc_05',
+];
+
+function formatCOP(n: number | null | undefined): string {
+  if (n == null) return '';
+  return n.toLocaleString('es-CO');
+}
+
+function mapValoresToPm4(valores: ValorDeducible[], moneda: string): Record<string, unknown>[] {
+  return valores.map((v, i) => {
+    const filled = v.frm_valores_limite_asegurado !== '' && v.frm_valores_limite_asegurado != null;
+    if (!filled) {
+      return {
+        row_id: ROW_IDS_VALORES[i],
+        frm_valores_opcion: v.frm_valores_opcion,
+        frm_cot_moneda_dup_vad: null,
+        frm_valores_limite_asegurado: null,
+        frm_valores_deducible_porcentaje: null,
+        frm_valor_asegurado_control_procede: false,
+        frm_valores_deducible_minimo_factor: null,
+        frm_valores_deducible_minimo: null,
+        frm_valores_deducible_minimo_smmlv: null,
+        frm_valores_limite_asegurado_formateado: null,
+        frm_valores_deducible_porcentaje_formateado: null,
+        frm_valores_deducible_minimo_formateado: null,
+        frm_valores_deducible_minimo_smmlv_formateado: null,
+      };
+    }
+
+    const limite = v.frm_valores_limite_asegurado as number;
+    const pct = v.frm_valores_deducible_porcentaje as number;
+    const factor = v.frm_valores_deducible_minimo_factor || null;
+    const esValor = factor === 'VALOR';
+    const esSmmlv = factor === 'SMMLV';
+    const minValor = esValor && v.frm_valores_deducible_minimo !== '' ? v.frm_valores_deducible_minimo as number : null;
+    const minSmmlv = esSmmlv && v.frm_valores_deducible_minimo_smmlv !== '' ? v.frm_valores_deducible_minimo_smmlv as number : null;
+
+    return {
+      row_id: ROW_IDS_VALORES[i],
+      frm_valores_opcion: v.frm_valores_opcion,
+      frm_cot_moneda_dup_vad: moneda,
+      frm_valores_limite_asegurado: limite,
+      frm_valores_deducible_porcentaje: pct,
+      frm_valores_deducible_minimo_factor: factor,
+      frm_valores_deducible_minimo: minValor,
+      frm_valores_deducible_minimo_smmlv: esSmmlv ? String(minSmmlv ?? '0') : '0',
+      frm_valor_asegurado_control_procede: false,
+      frm_valores_limite_asegurado_formateado: formatCOP(limite),
+      frm_valores_deducible_porcentaje_formateado: `${pct} %`,
+      frm_valores_deducible_minimo_formateado: minValor != null ? formatCOP(minValor) : null,
+      frm_valores_deducible_minimo_smmlv_formateado: minSmmlv != null ? formatCOP(minSmmlv) : null,
+      ...(i === 0 && { control_opcion_1_frm_valores_asegurados_deducibles: 'NO' }),
+      control_opcion_rellenar_valores_asegurados_deducibles: null,
+      control_opciones_consecutivas_frm_valores_asegurados_deducibles: 'NO',
+    };
+  });
 }
 
 async function consultarCliente(
@@ -240,7 +309,7 @@ function InfoTomador({
           <div className="form-row cols-3">
             <DateField label="Fecha de constitución" registration={register('frm_tom_fecha_constitucion')} readOnly={locked} />
             <InputField label="Teléfono" registration={register('frm_tom_telefono', { pattern: { value: /^\d{7,12}$/, message: 'Teléfono inválido' } })} type="text" error={fe('frm_tom_telefono')} readOnly={locked} />
-            <InputField label="Correo para facturación" registration={register('frm_tom_correo_facturacion', { required: 'Campo requerido', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' } })} type="email" required error={fe('frm_tom_correo_facturacion')} readOnly={locked} />
+            <InputField label="Correo para facturación" registration={register('frm_tom_correo_facturacion', { pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' } })} type="email" error={fe('frm_tom_correo_facturacion')} readOnly={locked} />
           </div>
 
           <div className="form-row cols-3">
@@ -261,7 +330,15 @@ function InfoTomador({
 // ---------------------------------------------------------------------------
 // Sección: Sub-información del Asegurado (pantalla 213)
 // ---------------------------------------------------------------------------
-function SubInfoAsegurado({ form }: { form: Form }) {
+function SubInfoAsegurado({
+  form,
+  exportaciones,
+  onExportacionesChange,
+}: {
+  form: Form;
+  exportaciones: ExportacionRow[];
+  onExportacionesChange: (list: ExportacionRow[]) => void;
+}) {
   const { formState: { errors, isSubmitted }, watch } = form;
   const w = watch();
   const fe = (n: keyof SolicitudCotizacionFormData) =>
@@ -277,6 +354,13 @@ function SubInfoAsegurado({ form }: { form: Form }) {
         <InputField label="N° de ubicaciones" registration={form.register('frm_aseg_numero_ubicaciones', { required: 'Campo requerido', min: { value: 1, message: 'Debe ser >= 1' } })} type="number" required error={fe('frm_aseg_numero_ubicaciones')} />
         <SelectField label="Realiza exportaciones" name="frm_aseg_realiza_exportaciones_flag" control={form.control} rules={{ required: 'Campo requerido' }} options={OPTIONS.siNo} required error={fe('frm_aseg_realiza_exportaciones_flag')} />
       </div>
+
+      {w.frm_aseg_realiza_exportaciones_flag === 'SI' && (
+        <div className="form-subsection form-subsection--exportaciones">
+          <div className="form-subsection-title">Detalle de exportaciones</div>
+          <DetalleExportaciones value={exportaciones} onChange={onExportacionesChange} />
+        </div>
+      )}
     </FormSection>
   );
 }
@@ -333,7 +417,7 @@ function InfoAsegurado({
           <div className="form-row cols-3">
             <DateField label="Fecha de constitución" registration={register('frm_aseg_fecha_constitucion')} readOnly={locked} />
             <InputField label="Teléfono" registration={register('frm_aseg_telefono', { pattern: { value: /^\d{7,12}$/, message: 'Teléfono inválido' } })} type="text" error={fe('frm_aseg_telefono')} readOnly={locked} />
-            <InputField label="Correo para facturación" registration={register('frm_aseg_correo_facturacion', { required: 'Campo requerido', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' } })} type="email" required error={fe('frm_aseg_correo_facturacion')} readOnly={locked} />
+            <InputField label="Correo para facturación" registration={register('frm_aseg_correo_facturacion', { pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' } })} type="email" error={fe('frm_aseg_correo_facturacion')} readOnly={locked} />
           </div>
 
           <div className="form-row cols-3">
@@ -480,6 +564,9 @@ export default function SolicitudCotizacionCuw() {
 
   const [tomadorTia, setTomadorTia] = useState<TiaStatus>('idle');
   const [aseguradoTia, setAseguradoTia] = useState<TiaStatus>('idle');
+  const [aseguradosAdicionales, setAseguradosAdicionales] = useState<AseguradoAdicional[]>([]);
+  const [valoresDeducibles, setValoresDeducibles] = useState<ValorDeducible[]>(INITIAL_VALORES);
+  const [exportaciones, setExportaciones] = useState<ExportacionRow[]>([]);
 
   const form = useForm<SolicitudCotizacionFormData>({
     mode: 'onChange',
@@ -506,12 +593,25 @@ export default function SolicitudCotizacionCuw() {
 
   useEffect(() => {
     if (!task?.data) return;
-    const d = task.data as Partial<SolicitudCotizacionFormData>;
+    const d = task.data as Partial<SolicitudCotizacionFormData> & {
+      frm_lista_asegurados_adicionales?: AseguradoAdicional[];
+      frm_valores_asegurados_deducibles?: ValorDeducible[];
+      frm_lista_detalle_exportaciones?: ExportacionRow[];
+    };
     Object.entries(d).forEach(([key, val]) => {
       if (val !== null && val !== undefined) {
         form.setValue(key as keyof SolicitudCotizacionFormData, val as never);
       }
     });
+    if (Array.isArray(d.frm_lista_asegurados_adicionales)) {
+      setAseguradosAdicionales(d.frm_lista_asegurados_adicionales);
+    }
+    if (Array.isArray(d.frm_valores_asegurados_deducibles) && d.frm_valores_asegurados_deducibles.length === 5) {
+      setValoresDeducibles(d.frm_valores_asegurados_deducibles);
+    }
+    if (Array.isArray(d.frm_lista_detalle_exportaciones)) {
+      setExportaciones(d.frm_lista_detalle_exportaciones);
+    }
   }, [task, form]);
 
   // Al cambiar el número de documento, limpiar el estado TIA para poder consultar otro
@@ -550,9 +650,19 @@ export default function SolicitudCotizacionCuw() {
 
   const onSubmit = async (data: SolicitudCotizacionFormData) => {
     try {
-      await completeTask(data as unknown as Record<string, unknown>);
+      const raw = data as unknown as Record<string, unknown>;
+      const payload: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (!k.startsWith('_')) payload[k] = v;
+      }
+      payload.frm_lista_asegurados_adicionales = aseguradosAdicionales;
+      payload.frm_valores_asegurados_deducibles = mapValoresToPm4(valoresDeducibles, data.frm_cot_moneda ?? 'COP');
+      payload.frm_lista_detalle_exportaciones = exportaciones;
+      console.log('[submit] Enviando a PM4:', payload);
+      await completeTask(payload);
       alert('Formulario enviado correctamente. La tarea fue completada.');
     } catch (e) {
+      console.error('[submit] Error PM4:', e);
       alert(`Error al enviar: ${(e as Error).message}`);
     }
   };
@@ -587,7 +697,7 @@ export default function SolicitudCotizacionCuw() {
           onCrearCliente={() => setTomadorTia('createNew')}
         />
 
-        <SubInfoAsegurado form={form} />
+        <SubInfoAsegurado form={form} exportaciones={exportaciones} onExportacionesChange={setExportaciones} />
 
         {tomadorEsAsegurado !== 'SI' && (
           <InfoAsegurado
@@ -598,11 +708,15 @@ export default function SolicitudCotizacionCuw() {
           />
         )}
 
+        <FormSection title="Asegurados Adicionales">
+          <AseguradosAdicionales value={aseguradosAdicionales} onChange={setAseguradosAdicionales} />
+        </FormSection>
+
         <DatosCotizacion form={form} />
 
-        <div className="todo-note">
-          ⚙️ <strong>Valores Asegurados y Deducibles</strong> — Pendiente de implementar (requiere componente de tabla editable / record list).
-        </div>
+        <FormSection title="Valores Asegurados y Deducibles">
+          <ValoresDeducibles value={valoresDeducibles} onChange={setValoresDeducibles} />
+        </FormSection>
 
         <PlanPago form={form} />
         <RevisionMora form={form} />
