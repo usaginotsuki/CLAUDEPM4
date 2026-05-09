@@ -4,11 +4,10 @@ import './styles.css';
 import { useTask } from '../../core/useTask';
 import { useCollection } from '../../core/useCollection';
 import FormSection from '../../components/FormSection';
-import InputField from '../../components/fields/InputField';
-import SelectField from '../../components/fields/SelectField';
-import DateField from '../../components/fields/DateField';
 import CreacionTomador from './CreacionTomador';
 import zurichLogo from '../../resources/zurich/ZurichLogo_Horz_White_CMYK_no_R.png';
+import { ZdsInput, ZdsDate, ZdsCheckboxField, ZdsSelect } from './ZdsField';
+import { ReactButton } from '@zurich/css-components/react';
 import {
   OPTIONS, COLLECTION_DEFS, DEPARTAMENTOS, CIUDADES_POR_DEPTO,
   FfFlSolicitudFormData,
@@ -35,7 +34,7 @@ function InfoGeneral({
   form: ReturnType<typeof useForm<FfFlSolicitudFormData>>;
   productError: string;
 }) {
-  const { register, control, formState: { errors, isSubmitted }, watch } = form;
+  const { control, formState: { errors, isSubmitted }, watch } = form;
   const w = watch();
   const { options: intermediarios, loading: loadingInt } = useCollection(COLLECTION_DEFS.intermediarios);
   const fe = (name: keyof FfFlSolicitudFormData) =>
@@ -53,7 +52,7 @@ function InfoGeneral({
   return (
     <FormSection title="Información General" color="#2167AE">
       <div className="form-row cols-3">
-        <SelectField
+        <ZdsSelect
           label="Sucursal"
           name="frm_gen_sucursal"
           control={control}
@@ -62,26 +61,29 @@ function InfoGeneral({
           required
           error={fe('frm_gen_sucursal')}
         />
-        <DateField label="Fecha de solicitud" registration={register('frm_gen_fecha_solicitud')} readOnly />
-        <InputField label="Usuario" registration={register('frm_gen_usuario')} readOnly />
+        <ZdsDate control={control} name="frm_gen_fecha_solicitud" label="Fecha de solicitud" readOnly />
+        <ZdsInput control={control} name="frm_gen_usuario" label="Usuario" readOnly />
       </div>
 
       <div className="form-row cols-3">
-        <InputField label="Segmento" registration={register('frm_gen_segmento')} readOnly />
-        <InputField label="Línea de negocio" registration={register('frm_gen_linea_negocio')} readOnly />
-        <InputField label="Tipo de producción" registration={register('frm_gen_tipo_produccion')} readOnly />
+        <ZdsInput control={control} name="frm_gen_segmento" label="Segmento" readOnly />
+        <ZdsInput control={control} name="frm_gen_linea_negocio" label="Línea de negocio" readOnly />
+        <ZdsInput control={control} name="frm_gen_tipo_produccion" label="Tipo de producción" readOnly />
       </div>
 
       <div className="form-row cols-2">
-        <InputField
+        <ZdsInput
+          control={control}
+          name="frm_gen_canal_comercial"
           label="Canal comercial"
-          registration={register('frm_gen_canal_comercial')}
           readOnly
-          helper="Se asigna automáticamente según el intermediario"
+          helpText="Se asigna automáticamente según el intermediario"
         />
-        <InputField
+        <ZdsInput
+          control={control}
+          name="frm_gen_comercial"
           label="Comercial"
-          registration={register('frm_gen_comercial', { required: 'Campo requerido' })}
+          rules={{ required: 'Campo requerido' }}
           required
           error={fe('frm_gen_comercial')}
         />
@@ -94,10 +96,7 @@ function InfoGeneral({
         </div>
         <div className="checkbox-grid">
           {PRODUCTOS.map(([name, label]) => (
-            <label key={name} className={`checkbox-item${w[name] ? ' checked' : ''}`}>
-              <input type="checkbox" {...register(name)} />
-              <span className="checkbox-item-label">{label}</span>
-            </label>
+            <ZdsCheckboxField key={name} control={control} name={name} label={label} />
           ))}
         </div>
         {productError && <div className="product-error">{productError}</div>}
@@ -109,8 +108,8 @@ function InfoGeneral({
       </div>
 
       <div className="form-row cols-3">
-        <InputField label="Tipo de negocio" registration={register('frm_gen_tipo_negocio')} readOnly />
-        <SelectField
+        <ZdsInput control={control} name="frm_gen_tipo_negocio" label="Tipo de negocio" readOnly />
+        <ZdsSelect
           label="Nueva / Renovación"
           name="frm_gen_nueva_renovacion"
           control={control}
@@ -119,21 +118,23 @@ function InfoGeneral({
           required
           error={fe('frm_gen_nueva_renovacion')}
         />
-        <InputField
+        <ZdsInput
+          control={control}
+          name="frm_gen_nro_poliza"
           label="Nro. de póliza actual"
-          registration={register('frm_gen_nro_poliza', {
+          rules={{
             required: esRenovacion ? 'Campo requerido para renovaciones' : false,
             minLength: { value: 4, message: 'Mínimo 4 caracteres' },
             maxLength: { value: 16, message: 'Máximo 16 caracteres' },
             pattern: { value: /^[a-zA-Z0-9\-]+$/, message: 'Solo letras, números y guiones' },
-          })}
+          }}
           required={esRenovacion}
           error={fe('frm_gen_nro_poliza')}
         />
       </div>
 
       <div className="form-row cols-2">
-        <SelectField
+        <ZdsSelect
           label="Intermediario"
           name="frm_gen_intermediario"
           control={control}
@@ -142,14 +143,16 @@ function InfoGeneral({
           required
           error={fe('frm_gen_intermediario')}
         />
-        <InputField
+        <ZdsInput
+          control={control}
+          name="frm_gen_correo_intermediario"
           label="Correo del intermediario"
-          registration={register('frm_gen_correo_intermediario', {
+          rules={{
             required: 'Campo requerido',
             pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' },
             maxLength: { value: 254, message: 'Máximo 254 caracteres' },
-          })}
-          type="email"
+          }}
+          inputType="email"
           required
           error={fe('frm_gen_correo_intermediario')}
         />
@@ -159,14 +162,16 @@ function InfoGeneral({
         <div className="correos-adicionales-header">Correos adicionales (máximo 3)</div>
         <div className="form-row cols-3">
           {(['frm_gen_correo_adicional_1', 'frm_gen_correo_adicional_2', 'frm_gen_correo_adicional_3'] as const).map((name, i) => (
-            <InputField
+            <ZdsInput
               key={name}
+              control={control}
+              name={name}
               label={`Correo adicional ${i + 1}`}
-              registration={register(name, {
+              rules={{
                 pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' },
                 maxLength: { value: 254, message: 'Máximo 254 caracteres' },
-              })}
-              type="email"
+              }}
+              inputType="email"
               error={fe(name)}
             />
           ))}
@@ -186,7 +191,7 @@ function InfoTomador({
   form: ReturnType<typeof useForm<FfFlSolicitudFormData>>;
   onConsultarNIT: () => void;
 }) {
-  const { register, control, formState: { errors, isSubmitted }, watch, setValue } = form;
+  const { control, formState: { errors, isSubmitted }, watch, setValue } = form;
   const w = watch();
   const fe = (name: keyof FfFlSolicitudFormData) =>
     fieldError(errors[name] as FieldError | undefined, w[name], isSubmitted);
@@ -194,7 +199,6 @@ function InfoTomador({
   const ciudades = useMemo(() => CIUDADES_POR_DEPTO[w.frm_tom_departamento] ?? [], [w.frm_tom_departamento]);
   useEffect(() => { setValue('frm_tom_ciudad', ''); }, [w.frm_tom_departamento, setValue]);
 
-  // Cargar actividades solo cuando el producto está seleccionado
   const { options: actDyO, loading: loadActDyO } = useCollection(w.frm_gen_prod_dyo ? COLLECTION_DEFS.actividadesDyO : null);
   const { options: actCC, loading: loadActCC } = useCollection(w.frm_gen_prod_cc ? COLLECTION_DEFS.actividadesCC : null);
   const { options: actPDySI, loading: loadActPDySI } = useCollection(w.frm_gen_prod_pdysi ? COLLECTION_DEFS.actividadesPDySI : null);
@@ -210,19 +214,21 @@ function InfoTomador({
   return (
     <FormSection title="Información del Tomador" color="#2167AE">
       <div className="form-row cols-3 row-align-bottom">
-        <InputField
+        <ZdsInput
+          control={control}
+          name="frm_tom_nit"
           label="NIT"
-          registration={register('frm_tom_nit', {
+          rules={{
             required: 'Campo requerido',
             minLength: { value: 7, message: 'Mínimo 7 dígitos' },
             maxLength: { value: 10, message: 'Máximo 10 dígitos' },
             pattern: { value: /^\d+$/, message: 'Solo dígitos, sin separador' },
-          })}
+          }}
           required
           error={fe('frm_tom_nit')}
-          helper="9 dígitos + dígito verificador"
+          helpText="9 dígitos + dígito verificador"
         />
-        <InputField label="Tomador" registration={register('frm_tom_tomador')} readOnly helper="Dato de TIA" />
+        <ZdsInput control={control} name="frm_tom_tomador" label="Tomador" readOnly helpText="Dato de TIA" />
         <div className="form-group consultar-wrapper">
           <button type="button" className="btn-consultar" onClick={onConsultarNIT}>
             🔍 Consultar TIA
@@ -231,8 +237,8 @@ function InfoTomador({
       </div>
 
       <div className="form-row cols-3">
-        <InputField label="Dirección" registration={register('frm_tom_direccion')} readOnly helper="Dato de TIA" />
-        <SelectField
+        <ZdsInput control={control} name="frm_tom_direccion" label="Dirección" readOnly helpText="Dato de TIA" />
+        <ZdsSelect
           label="Departamento"
           name="frm_tom_departamento"
           control={control}
@@ -241,7 +247,7 @@ function InfoTomador({
           required
           error={fe('frm_tom_departamento')}
         />
-        <SelectField
+        <ZdsSelect
           label="Ciudad"
           name="frm_tom_ciudad"
           control={control}
@@ -254,17 +260,17 @@ function InfoTomador({
       </div>
 
       <div className="form-row cols-3">
-        <InputField
+        <ZdsInput
+          control={control}
+          name="frm_tom_correo_facturacion"
           label="Correo para facturación"
-          registration={register('frm_tom_correo_facturacion', {
-            pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' },
-          })}
-          type="email"
-          helper="Dato de TIA (editable)"
+          rules={{ pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' } }}
+          inputType="email"
+          helpText="Dato de TIA (editable)"
           error={fe('frm_tom_correo_facturacion')}
         />
         {w.frm_gen_prod_dyo && (
-          <SelectField
+          <ZdsSelect
             label="Sector"
             name="frm_tom_sector"
             control={control}
@@ -274,18 +280,19 @@ function InfoTomador({
             error={fe('frm_tom_sector')}
           />
         )}
-        <InputField
+        <ZdsInput
+          control={control}
+          name="frm_tom_detalle_actividad"
           label="Detalle actividad empresarial"
-          registration={register('frm_tom_detalle_actividad', {
+          rules={{
             required: 'Campo requerido',
             maxLength: { value: 100, message: 'Máximo 100 caracteres' },
-          })}
+          }}
           required
           error={fe('frm_tom_detalle_actividad')}
         />
       </div>
 
-      {/* Actividades aseguradas (por producto seleccionado) */}
       {actRows.length > 0 && (
         <div className="form-subsection" style={{ marginTop: 8 }}>
           <div className="form-subsection-title">Actividades aseguradas</div>
@@ -300,26 +307,25 @@ function InfoTomador({
               <div key={prod} className="actividades-table-row">
                 <span className="actividades-prod-label">{prod}</span>
                 <div className="actividades-cell">
-                  <SelectField
+                  <ZdsSelect
                     label=""
                     name={actField}
                     control={control}
+                    rules={{ required: 'Requerido' }}
                     options={options}
                     loading={loading}
                     error={fe(actField)}
                   />
                 </div>
                 <div className="actividades-cell">
-                  <InputField label="" registration={register(ciuField)} readOnly />
+                  <ZdsInput control={control} name={ciuField} label="" readOnly />
                 </div>
                 <div className="actividades-cell">
-                  <InputField label="" registration={register(naicField)} readOnly />
+                  <ZdsInput control={control} name={naicField} label="" readOnly />
                 </div>
               </div>
             ))}
           </div>
-          {/* TODO: verificar IDs de colecciones de actividades en PM4 FL (IDs 20-23 son placeholders) */}
-          {/* TODO: conectar rawMap para auto-poblar CIIU y NAIC al seleccionar actividad */}
         </div>
       )}
 
@@ -338,7 +344,6 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
   const fe = (name: keyof FfFlSolicitudFormData) =>
     fieldError(errors[name] as FieldError | undefined, w[name], isSubmitted);
 
-  // Calcular fin de vigencia (365 días a partir de inicio)
   useEffect(() => {
     if (!w.frm_cot_inicio_vigencia) return;
     const d = new Date(w.frm_cot_inicio_vigencia);
@@ -348,7 +353,6 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
     setValue('frm_cot_dias', 365);
   }, [w.frm_cot_inicio_vigencia, setValue]);
 
-  // Poblar modalidades de cobertura ocultas según producto
   useEffect(() => {
     if (w.frm_gen_prod_dyo) setValue('frm_cot_modalidad_dyo', 'Por reclamación (claims made)');
     if (w.frm_gen_prod_cc) setValue('frm_cot_modalidad_cc', 'Descubrimiento');
@@ -361,26 +365,28 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
   return (
     <FormSection title="Datos de la Cotización" color="#2167AE">
       <div className="form-row cols-4">
-        <DateField
+        <ZdsDate
+          control={control}
+          name="frm_cot_inicio_vigencia"
           label="Inicio de vigencia"
-          registration={register('frm_cot_inicio_vigencia', { required: 'Campo requerido' })}
+          rules={{ required: 'Campo requerido' }}
           required
-          helper="a las 00:00 horas"
+          helpText="a las 00:00 horas"
           error={fe('frm_cot_inicio_vigencia')}
         />
-        <DateField label="Fin de vigencia" registration={register('frm_cot_fin_vigencia')} readOnly helper="a las 24:00 horas" />
-        <InputField label="Días" registration={register('frm_cot_dias')} type="number" readOnly />
-        <InputField label="Moneda" registration={register('frm_cot_moneda')} readOnly />
+        <ZdsDate control={control} name="frm_cot_fin_vigencia" label="Fin de vigencia" readOnly helpText="a las 24:00 horas" />
+        <ZdsInput control={control} name="frm_cot_dias" label="Días" readOnly />
+        <ZdsInput control={control} name="frm_cot_moneda" label="Moneda" readOnly />
       </div>
 
       <div className="form-row cols-2">
-        <InputField label="Comisión" registration={register('frm_cot_comision')} readOnly suffix="%" helper="20% por defecto" />
-        <InputField label="Soporte ofrecido" registration={register('frm_cot_soporte_ofrecido')} readOnly suffix="%" helper="100% por defecto" />
+        <ZdsInput control={control} name="frm_cot_comision" label="Comisión (%)" readOnly helpText="20% por defecto" />
+        <ZdsInput control={control} name="frm_cot_soporte_ofrecido" label="Soporte ofrecido (%)" readOnly helpText="100% por defecto" />
       </div>
 
       {w.frm_gen_prod_cc && (
         <div className="form-row cols-2">
-          <SelectField
+          <ZdsSelect
             label="Número de empleados"
             name="frm_cot_num_empleados"
             control={control}
@@ -389,7 +395,7 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
             required
             error={fe('frm_cot_num_empleados')}
           />
-          <SelectField
+          <ZdsSelect
             label="Número de predios"
             name="frm_cot_num_predios"
             control={control}
@@ -408,32 +414,31 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
             {w.frm_gen_prod_dyo && (
               <div className="facturacion-block">
                 <div className="facturacion-block-label">Directores y Administradores</div>
-                <SelectField label="" name="frm_cot_fact_anual_dyo" control={control} rules={{ required: 'Campo requerido' }} options={OPTIONS.facturacionDyO} error={fe('frm_cot_fact_anual_dyo')} />
+                <ZdsSelect label="" name="frm_cot_fact_anual_dyo" control={control} rules={{ required: 'Campo requerido' }} options={OPTIONS.facturacionDyO} error={fe('frm_cot_fact_anual_dyo')} />
               </div>
             )}
             {w.frm_gen_prod_cc && (
               <div className="facturacion-block">
                 <div className="facturacion-block-label">Crimen Comercial</div>
-                <SelectField label="" name="frm_cot_fact_anual_cc" control={control} rules={{ required: 'Campo requerido' }} options={OPTIONS.facturacionCC} error={fe('frm_cot_fact_anual_cc')} />
+                <ZdsSelect label="" name="frm_cot_fact_anual_cc" control={control} rules={{ required: 'Campo requerido' }} options={OPTIONS.facturacionCC} error={fe('frm_cot_fact_anual_cc')} />
               </div>
             )}
             {w.frm_gen_prod_pdysi && (
               <div className="facturacion-block">
                 <div className="facturacion-block-label">Protección de Datos y SI</div>
-                <SelectField label="" name="frm_cot_fact_anual_pdysi" control={control} rules={{ required: 'Campo requerido' }} options={OPTIONS.facturacionPDySI} error={fe('frm_cot_fact_anual_pdysi')} />
+                <ZdsSelect label="" name="frm_cot_fact_anual_pdysi" control={control} rules={{ required: 'Campo requerido' }} options={OPTIONS.facturacionPDySI} error={fe('frm_cot_fact_anual_pdysi')} />
               </div>
             )}
             {w.frm_gen_prod_pi && (
               <div className="facturacion-block">
                 <div className="facturacion-block-label">Seguro Profesional</div>
-                <SelectField label="" name="frm_cot_fact_anual_pi" control={control} rules={{ required: 'Campo requerido' }} options={OPTIONS.facturacionPI} error={fe('frm_cot_fact_anual_pi')} />
+                <ZdsSelect label="" name="frm_cot_fact_anual_pi" control={control} rules={{ required: 'Campo requerido' }} options={OPTIONS.facturacionPI} error={fe('frm_cot_fact_anual_pi')} />
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Modalidades de cobertura (campos ocultos, seteados automáticamente) */}
       <input type="hidden" {...register('frm_cot_modalidad_dyo')} />
       <input type="hidden" {...register('frm_cot_modalidad_cc')} />
       <input type="hidden" {...register('frm_cot_modalidad_pdysi')} />
@@ -446,16 +451,16 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
 // Sección: Plan de pago
 // ---------------------------------------------------------------------------
 function PlanPago({ form }: { form: ReturnType<typeof useForm<FfFlSolicitudFormData>> }) {
-  const { register, control } = form;
+  const { control } = form;
   return (
     <FormSection title="Plan de Pago" color="#2167AE">
       <div className="form-row cols-2">
-        <SelectField label="Plan de pago" name="frm_plan_plan_pago" control={control} options={OPTIONS.planPago} />
-        <InputField label="Número de cuotas" registration={register('frm_plan_num_cuotas')} readOnly helper="1 cuota por defecto" />
+        <ZdsSelect label="Plan de pago" name="frm_plan_plan_pago" control={control} options={OPTIONS.planPago} />
+        <ZdsInput control={control} name="frm_plan_num_cuotas" label="Número de cuotas" readOnly helpText="1 cuota por defecto" />
       </div>
       <div className="form-row cols-2">
-        <SelectField label="Medio de pago" name="frm_plan_medio_pago" control={control} options={OPTIONS.medioPago} />
-        <InputField label="Frecuencia de cobro" registration={register('frm_plan_frecuencia_cobro')} readOnly helper="Anual por defecto" />
+        <ZdsSelect label="Medio de pago" name="frm_plan_medio_pago" control={control} options={OPTIONS.medioPago} />
+        <ZdsInput control={control} name="frm_plan_frecuencia_cobro" label="Frecuencia de cobro" readOnly helpText="Anual por defecto" />
       </div>
     </FormSection>
   );
@@ -496,7 +501,6 @@ export default function SolicitudFfFl() {
     },
   });
 
-  // Pre-poblar el formulario con los datos del task (variables del proceso)
   useEffect(() => {
     if (!task?.data) return;
     const d = task.data as Partial<FfFlSolicitudFormData>;
@@ -515,9 +519,6 @@ export default function SolicitudFfFl() {
     setProductError('');
     setSubmitError('');
     try {
-      // Combinar variables originales del proceso con los datos del formulario.
-      // Los datos del formulario tienen precedencia; las variables de PM4 no mostradas
-      // en este form se preservan para que el proceso no las pierda.
       const payload: Record<string, unknown> = {
         ...(task?.data ?? {}),
         ...(data as unknown as Record<string, unknown>),
@@ -532,7 +533,6 @@ export default function SolicitudFfFl() {
   const handleConsultarNIT = () => {
     const nit = form.getValues('frm_tom_nit');
     if (!nit) { setSubmitError('Ingrese el NIT primero.'); return; }
-    // TODO: invocar watcher "Consultar NIT en TIA" via /api/scripts/{scriptId}/execute
     console.log('[watcher] Consultando NIT en TIA:', nit);
   };
 
@@ -543,9 +543,7 @@ export default function SolicitudFfFl() {
     return (
       <div className="screen-wrapper">
         <div className="screen-header">
-          <div className="title-block">
-            <h1>Cotizador Fast Flow — Líneas Financieras</h1>
-          </div>
+          <div className="title-block"><h1>Cotizador Fast Flow — Líneas Financieras</h1></div>
           <img src={zurichLogo} alt="Zurich" className="header-logo" />
         </div>
         <div className="screen-content">
@@ -581,14 +579,17 @@ export default function SolicitudFfFl() {
           <DatosCotizacion form={form} />
           <PlanPago form={form} />
 
-          {submitError && (
-            <div className="submit-error">{submitError}</div>
-          )}
+          {submitError && <div className="submit-error">{submitError}</div>}
 
           <div className="submit-bar">
-            <button type="submit" className="btn-continuar" disabled={submitting}>
+            <ReactButton
+              config="primary:l"
+              disabled={submitting}
+              loading={submitting}
+              onClick={() => form.handleSubmit(onSubmit)()}
+            >
               {submitting ? 'Enviando...' : 'CONTINUAR →'}
-            </button>
+            </ReactButton>
           </div>
         </form>
       </div>
