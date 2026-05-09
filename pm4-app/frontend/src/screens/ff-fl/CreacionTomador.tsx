@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useForm, FieldError } from 'react-hook-form';
-import InputField from '../../components/fields/InputField';
-import SelectField from '../../components/fields/SelectField';
-import DateField from '../../components/fields/DateField';
+import { ZdsInput, ZdsDate, ZdsSelect } from './ZdsField';
 import { OPTIONS, DEPARTAMENTOS, CIUDADES_POR_DEPTO, FfFlSolicitudFormData } from './variables';
 
 type Form = ReturnType<typeof useForm<FfFlSolicitudFormData>>;
@@ -47,39 +45,43 @@ export default function CreacionTomador({ form }: { form: Form }) {
       {open && (
         <div className="creacion-tomador-body">
           <div className="form-row cols-3">
-            <InputField
+            <ZdsInput
+              control={control}
+              name="frm_cre_nombre_compania"
               label="Nombre de compañía"
-              registration={register('frm_cre_nombre_compania', {
+              rules={{
                 required: 'Campo requerido',
                 maxLength: { value: 50, message: 'Máximo 50 caracteres' },
                 pattern: { value: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]+$/, message: 'Sin caracteres especiales' },
-              })}
+              }}
               required
               error={err('frm_cre_nombre_compania')}
             />
-            <SelectField
+            <ZdsSelect
               label="Tipo de documento"
               name="frm_cre_tipo_doc"
               control={control}
               options={OPTIONS.tipoDocCre}
               disabled
             />
-            <InputField
+            <ZdsInput
+              control={control}
+              name="frm_cre_nro_doc"
               label="Nro. de documento (NIT)"
-              registration={register('frm_cre_nro_doc', {
+              rules={{
                 required: 'Campo requerido',
                 minLength: { value: 7, message: 'Mínimo 7 dígitos' },
                 maxLength: { value: 10, message: 'Máximo 10 dígitos' },
                 pattern: { value: /^\d+$/, message: 'Solo dígitos (sin separador)' },
-              })}
+              }}
               required
               error={err('frm_cre_nro_doc')}
-              helper="9 dígitos + dígito verificador, sin separador"
+              helpText="9 dígitos + dígito verificador, sin separador"
             />
           </div>
 
           <div className="form-row cols-3">
-            <SelectField
+            <ZdsSelect
               label="Tipo de empresa"
               name="frm_cre_tipo_empresa"
               control={control}
@@ -88,24 +90,20 @@ export default function CreacionTomador({ form }: { form: Form }) {
               required
               error={err('frm_cre_tipo_empresa')}
             />
-            <DateField
-              label="Fecha de constitución"
-              registration={register('frm_cre_fecha_constitucion')}
-            />
-            <DateField
-              label="Fecha de expedición del documento"
-              registration={register('frm_cre_fecha_expedicion')}
-            />
+            <ZdsDate control={control} name="frm_cre_fecha_constitucion" label="Fecha de constitución" />
+            <ZdsDate control={control} name="frm_cre_fecha_expedicion" label="Fecha de expedición del documento" />
           </div>
 
           <div className="form-row cols-1">
-            <InputField
+            <ZdsInput
+              control={control}
+              name="frm_cre_actividad_comercial"
               label="Actividad comercial"
-              registration={register('frm_cre_actividad_comercial', {
+              rules={{
                 required: 'Campo requerido',
                 maxLength: { value: 100, message: 'Máximo 100 caracteres' },
                 pattern: { value: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]+$/, message: 'Sin caracteres especiales' },
-              })}
+              }}
               required
               error={err('frm_cre_actividad_comercial')}
             />
@@ -113,43 +111,48 @@ export default function CreacionTomador({ form }: { form: Form }) {
 
           <div className="form-subsection-title" style={{ marginTop: 12 }}>Representante legal</div>
           <div className="form-row cols-3">
-            <InputField
+            <ZdsInput
+              control={control}
+              name="frm_cre_nombre_rep_legal"
               label="Nombre del representante legal"
-              registration={register('frm_cre_nombre_rep_legal', {
+              rules={{
                 maxLength: { value: 50, message: 'Máximo 50 caracteres' },
                 pattern: { value: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, message: 'Sin caracteres especiales' },
-              })}
+              }}
               error={err('frm_cre_nombre_rep_legal')}
             />
-            <SelectField
+            <ZdsSelect
               label="Tipo de documento"
               name="frm_cre_tipo_doc_rep_legal"
               control={control}
               options={OPTIONS.tipoDocRepLegal}
             />
-            <InputField
+            <ZdsInput
+              control={control}
+              name="frm_cre_nro_doc_rep_legal"
               label="Nro. de documento"
-              registration={register('frm_cre_nro_doc_rep_legal')}
-              helper="CC: 5-10 dígitos | CE: 1-10 dígitos | PAS: 1-10 alfanumérico"
+              helpText="CC: 5-10 dígitos | CE: 1-10 dígitos | PAS: 1-10 alfanumérico"
               error={err('frm_cre_nro_doc_rep_legal')}
             />
           </div>
 
           <div className="form-subsection-title" style={{ marginTop: 12 }}>Dirección</div>
           <div className="form-row cols-1">
-            <InputField
+            <ZdsInput
+              control={control}
+              name="frm_cre_direccion"
               label="Dirección"
-              registration={register('frm_cre_direccion', {
+              rules={{
                 required: 'Campo requerido',
                 maxLength: { value: 150, message: 'Máximo 150 caracteres' },
                 pattern: { value: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s#\-,.]+$/, message: 'Sin caracteres especiales' },
-              })}
+              }}
               required
               error={err('frm_cre_direccion')}
             />
           </div>
           <div className="form-row cols-3">
-            <SelectField
+            <ZdsSelect
               label="Departamento"
               name="frm_cre_departamento"
               control={control}
@@ -158,7 +161,7 @@ export default function CreacionTomador({ form }: { form: Form }) {
               required
               error={err('frm_cre_departamento')}
             />
-            <SelectField
+            <ZdsSelect
               label="Ciudad"
               name="frm_cre_ciudad"
               control={control}
@@ -168,13 +171,15 @@ export default function CreacionTomador({ form }: { form: Form }) {
               required
               error={err('frm_cre_ciudad')}
             />
-            <InputField
+            <ZdsInput
+              control={control}
+              name="frm_cre_correo_facturacion"
               label="Correo para facturación"
-              registration={register('frm_cre_correo_facturacion', {
+              rules={{
                 pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' },
                 maxLength: { value: 254, message: 'Máximo 254 caracteres' },
-              })}
-              type="email"
+              }}
+              inputType="email"
               error={err('frm_cre_correo_facturacion')}
             />
           </div>
