@@ -157,8 +157,10 @@ export function ZdsSelect<TFV extends FieldValues>({
           required={required}
           disabled={disabled || loading}
           invalid={!!error}
-          withSearch={withSearch}
-          {...(kp(error, helpText ?? (loading ? 'Cargando opciones...' : undefined)) as Record<string, unknown>)}
+          {...({
+            ...kp(error, helpText ?? (loading ? 'Cargando opciones...' : undefined)),
+            ...(withSearch ? { 'with-search': true } : {}),
+          } as Record<string, unknown>)}
           onChange={(val: string | null) => field.onChange(val ?? '')}
           onBlur={() => field.onBlur()}
         />
