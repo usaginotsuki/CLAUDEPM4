@@ -1,0 +1,202 @@
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useTask } from '../../core/useTask';
+import { RESPUESTA_VALUES, type RespuestaCotizacionData } from './variables';
+import './styles.css';
+
+const LOGO = 'https://bpm.beesmart.ec/fonts/zurich/zurich-logo-white.svg';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function getBlock(d: RespuestaCotizacionData): {
+  variant: 'info' | 'on-hold' | 'error';
+  icon: string;
+  title: string;
+  message: string;
+} | null {
+  const respuesta = d.frm_respuesta_cotizacion;
+  const lrFlag    = d.frm_control_desde_optalitix_loss_ratio_calculado_flag;
+  const conoceRC  = d.frm_conoceValorSumaRC;
+  const lrValue   = Number(d.frm_valorRC_lossRatio_calculado ?? 0);
+
+  if (
+    respuesta === RESPUESTA_VALUES.REQUIERE_CASEUW &&
+    String(lrFlag).toUpperCase() === 'NO'
+  ) {
+    return {
+      variant: 'info',
+      icon: '📋',
+      title: 'Cotización finalizada',
+      message:
+        'Esta oportunidad no puede cotizarse con Fast Flow y se creará un Case Underwriting.',
+    };
+  }
+
+  if (respuesta === RESPUESTA_VALUES.INTERMEDIARIO) {
+    return {
+      variant: 'on-hold',
+      icon: '⏸',
+      title: 'Cotización en estado On hold',
+      message: 'La cotización requiere revisión del área de Compliance.',
+    };
+  }
+
+  if (respuesta === RESPUESTA_VALUES.ON_HOLD) {
+    return {
+      variant: 'info',
+      icon: '🔒',
+      title: 'Cotización finalizada',
+      message:
+        'El intermediario no tiene autorización para gestionar esta cotización, favor comunicarse con el responsable de la cuenta.',
+    };
+  }
+
+  if (String(conoceRC).toUpperCase() === 'NO' && lrValue > 20) {
+    return {
+      variant: 'error',
+      icon: '⚠️',
+      title: 'Cotización finalizada',
+      message:
+        'Esta oportunidad no puede cotizarse con Fast Flow porque ha superado el límite establecido para el loss ratio (20%).',
+    };
+  }
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Confirm modal
+// ---------------------------------------------------------------------------
+interface ConfirmProps {
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function ConfirmModal({ onConfirm, onCancel }: ConfirmProps) {
+  return createPortal(
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div className="modal-dialog">
+        <div className="modal-header">Confirmar finalización</div>
+        <div className="modal-body">¿Estás seguro de finalizar esta cotización?</div>
+        <div className="modal-footer">
+          <button className="btn-cancelar" type="button" onClick={onCancel}>CANCELAR</button>
+          <button className="btn-aceptar" type="button" onClick={onConfirm}>ACEPTAR</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Screen
+// ---------------------------------------------------------------------------
+export default function RespuestaCotizacion() {
+  const { task, loading, error, submitting, completeTask } = useTask();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const data = (task?.data ?? {}) as unknown as RespuestaCotizacionData;
+  const block = task ? getBlock(data) : null;
+
+  async function handleConfirm() {
+    setConfirmOpen(false);
+    try {
+      await completeTask({});
+    } catch (err) {
+      console.error('[RespuestaCotizacion] Error al completar tarea:', err);
+      alert('Error al finalizar la cotización. Revise la consola.');
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="screen-wrapper">
+        <div className="state-screen">
+          <div className="loading-spinner" />
+          <span>Cargando resultado…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="screen-wrapper">
+        <div className="state-screen error-state">
+          <strong>Error al cargar el resultado</strong>
+          <span>{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  const titulo = data.frm_titulo || 'RESULTADO DE LA COTIZACIÓN';
+  const numCot = data.frm_gen_num_cotizacion;
+  const numCaso = data.frm_caso;
+
+  return (
+    <div className="screen-wrapper">
+      {submitting && (
+        <div className="loading-overlay">
+          <div className="loading-spinner" />
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="screen-header">
+        <div className="title-block">
+          <h1>{titulo}</h1>
+          <div className="subtitle">
+            {numCot && <span>Cotización # {numCot}</span>}
+            {numCaso && <span>Caso # {numCaso}</span>}
+          </div>
+        </div>
+        <img src={LOGO} alt="Zurich" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+      </div>
+
+      {/* Content */}
+      <div className="result-content">
+        {block ? (
+          <div className="result-card">
+            <div className={`result-card-header ${block.variant === 'on-hold' ? 'on-hold' : block.variant === 'error' ? 'error' : ''}`}>
+              <div className="result-icon">{block.icon}</div>
+              <h2>{block.title}</h2>
+            </div>
+            <div className="result-card-body">
+              <p>{block.message}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="result-card">
+            <div className="result-card-header">
+              <div className="result-icon">ℹ️</div>
+              <h2>Resultado de cotización</h2>
+            </div>
+            <div className="result-card-body">
+              <p>La cotización ha sido procesada.</p>
+            </div>
+          </div>
+        )}
+
+        <div className="result-actions">
+          <button
+            type="button"
+            className="btn-finalizar"
+            disabled={submitting}
+            onClick={() => setConfirmOpen(true)}
+          >
+            FINALIZAR
+          </button>
+        </div>
+      </div>
+
+      {confirmOpen && (
+        <ConfirmModal
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      )}
+    </div>
+  );
+}

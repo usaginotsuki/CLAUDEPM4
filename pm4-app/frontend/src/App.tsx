@@ -1,11 +1,13 @@
 import CotizadorFastFlow from './screens/cotizador-fast-flow/CotizadorFastFlow';
 import SolicitudCotizacionCuw from './screens/solicitud-cotizacion-cuw/SolicitudCotizacionCuw';
 import SolicitudFfFl from './screens/ff-fl/SolicitudFfFl';
+import RespuestaCotizacion from './screens/respuesta-cotizacion/RespuestaCotizacion';
 
 const SCREENS: Record<string, React.ComponentType> = {
   'cotizador-fast-flow': CotizadorFastFlow,
   'solicitud-cotizacion-cuw': SolicitudCotizacionCuw,
   'ff-fl': SolicitudFfFl,
+  'respuesta-cotizacion': RespuestaCotizacion,
 };
 
 export default function App() {

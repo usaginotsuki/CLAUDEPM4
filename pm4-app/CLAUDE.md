@@ -8,15 +8,15 @@ Las pantallas se crean aquí con ayuda de Claude (este chat), **no dentro de PM4
 
 **PM4 instance:** `https://mxzurich.dev.cloud.processmaker.net`
 **API base:** `/api/1.0`
-**Docs OpenAPI:** `c:\Proyectos\BPM\CLAUDEPM4\docs (4).json`
-**Paquetes JSON de pantallas originales:** `c:\Proyectos\BPM\CLAUDEPM4\*.json`
+**Docs OpenAPI:** `../docs (4).json` (un nivel arriba de pm4-app)
+**Paquetes JSON de pantallas originales:** `../*.json` (un nivel arriba de pm4-app)
 
 ---
 
 ## Cómo se ejecuta
 
 ```bash
-cd c:\Proyectos\BPM\CLAUDEPM4\pm4-app
+cd pm4-app   # desde la raíz del repo
 npm run dev
 ```
 
@@ -162,6 +162,16 @@ PM4 avanza el proceso al siguiente nodo
 - `OPTIONS` en `variables.ts` usan `as const` → pasarlos directamente a los campos (aceptan `readonly`)
 - Componente principal < 300 líneas; secciones grandes van como funciones locales en el mismo archivo o archivos separados en la misma carpeta
 
+### Datos pre-cargados desde PM4
+
+**Todas las pantallas siempre reciben datos pre-poblados desde PM4.** El flujo es:
+1. PM4 genera la URL del iframe con `?task_id=` o `?case_id=`
+2. `useTask()` hace GET al task y obtiene `task.data` con todos los valores del caso
+3. Los valores de `task.data` se inyectan en el formulario con `form.setValue()` al montar
+
+Esto significa que al renderizar, los campos ya tienen sus valores. No hay pantalla en blanco.
+Las pantallas de solo lectura (resultado, resumen) **no usan `react-hook-form`**; leen directamente de `task.data` y solo muestran información.
+
 ---
 
 ## Estructura de un paquete PM4 exportado
@@ -195,9 +205,30 @@ Fuente corporativa: `ZurichSans-Regular.ttf` desde `https://bpm.beesmart.ec/font
 
 ---
 
+## Pantallas anteriores (backup)
+
+Las pantallas implementadas anteriormente están en `../PM4 Backup/` (un nivel arriba de pm4-app).
+El usuario debe especificar explícitamente qué pantalla de backup quiere usar como referencia.
+Solo leer esos archivos si el usuario lo pide — no asumir cuál usar.
+
+---
+
+## Referencia de componentes Zurich — OBLIGATORIO
+
+Antes de generar cualquier componente o pantalla nueva, **siempre leer**:
+
+```
+outputs/zurich-index.md   (relativo a pm4-app/)
+```
+
+Este archivo contiene las bases de diseño, componentes disponibles y convenciones visuales de la aplicación.
+No crear componentes sin haberlo leído primero en la conversación actual.
+
+---
+
 ## Archivos que NO se deben modificar
 
 - `.env` — solo agregar variables, nunca borrar el token
 - `backend/src/routes/pm4.routes.ts` — agregar rutas si se necesitan nuevos endpoints, no reescribir la lógica de proxy
-- `docs (4).json` — es la referencia OpenAPI de PM4, solo lectura
-- Los JSON `*.json` en la raíz de `c:\Proyectos\BPM\CLAUDEPM4\` — son exports de PM4, solo lectura
+- `../docs (4).json` — es la referencia OpenAPI de PM4, solo lectura
+- `../*.json` — exports de PM4 en la raíz del repo, solo lectura
