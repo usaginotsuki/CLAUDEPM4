@@ -22,7 +22,7 @@ export default function CreacionTomador({ form }: { form: Form }) {
   const w = watch();
 
   const ciudadesCre = useMemo(
-    () => CIUDADES_POR_DEPTO[w.frm_cre_departamento] ?? [],
+    () => CIUDADES_POR_DEPTO[w.frm_cre_departamento ?? ''] ?? [],
     [w.frm_cre_departamento]
   );
 

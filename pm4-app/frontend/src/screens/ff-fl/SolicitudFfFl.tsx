@@ -196,7 +196,7 @@ function InfoTomador({
   const fe = (name: keyof FfFlSolicitudFormData) =>
     fieldError(errors[name] as FieldError | undefined, w[name], isSubmitted);
 
-  const ciudades = useMemo(() => CIUDADES_POR_DEPTO[w.frm_tom_departamento] ?? [], [w.frm_tom_departamento]);
+  const ciudades = useMemo(() => CIUDADES_POR_DEPTO[w.frm_tom_departamento ?? ''] ?? [], [w.frm_tom_departamento]);
   useEffect(() => { setValue('frm_tom_ciudad', ''); }, [w.frm_tom_departamento, setValue]);
 
   const { options: actDyO, loading: loadActDyO } = useCollection(w.frm_gen_prod_dyo ? COLLECTION_DEFS.actividadesDyO : null);
