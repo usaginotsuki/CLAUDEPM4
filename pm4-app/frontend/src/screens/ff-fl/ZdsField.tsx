@@ -1,19 +1,15 @@
 import { Controller } from 'react-hook-form';
-import type { Control, RegisterOptions, FieldPath } from 'react-hook-form';
+import type { Control, RegisterOptions, FieldPath, FieldValues } from 'react-hook-form';
 import { ZrTextInput }  from '@zurich/web-components/react/text-input';
 import { ZrCheckbox }   from '@zurich/web-components/react/checkbox';
 import { ZrSelect }     from '@zurich/web-components/react/select';
 import { ReactDateInput } from '@zurich/css-components/react';
-import type { FfFlSolicitudFormData } from './variables';
-
-type ZControl = Control<FfFlSolicitudFormData>;
-type ZField   = FieldPath<FfFlSolicitudFormData>;
 
 // Construye props kebab-case para pasarlos con spread (JSX no admite guiones en nombres de prop)
 function kp(error?: string, helpText?: string, inputType?: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  if (error)           out['help-text']  = error;
-  else if (helpText)   out['help-text']  = helpText;
+  if (error)          out['help-text']  = error;
+  else if (helpText)  out['help-text']  = helpText;
   if (inputType && inputType !== 'text') out['input-type'] = inputType;
   return out;
 }
@@ -21,26 +17,26 @@ function kp(error?: string, helpText?: string, inputType?: string): Record<strin
 // ---------------------------------------------------------------------------
 // Text / email / tel input  →  ZrTextInput (@zurich/web-components)
 // ---------------------------------------------------------------------------
-interface InputProps {
-  control: ZControl;
-  name: ZField;
+interface InputProps<TFV extends FieldValues> {
+  control: Control<TFV>;
+  name: FieldPath<TFV>;
   label: string;
   required?: boolean;
   readOnly?: boolean;
   helpText?: string;
   error?: string;
-  rules?: RegisterOptions;
+  rules?: RegisterOptions<TFV, FieldPath<TFV>>;
   inputType?: 'text' | 'email' | 'tel';
 }
 
-export function ZdsInput({
+export function ZdsInput<TFV extends FieldValues>({
   control, name, label, required, readOnly, helpText, error, rules, inputType,
-}: InputProps) {
+}: InputProps<TFV>) {
   return (
     <Controller
       name={name}
       control={control}
-      rules={rules}
+      rules={rules as RegisterOptions<TFV, typeof name>}
       render={({ field }) => (
         <ZrTextInput
           name={field.name}
@@ -49,9 +45,9 @@ export function ZdsInput({
           required={required}
           readonly={readOnly}
           invalid={!!error}
-          onChange={(val: string) => field.onChange(val)}
+          onChange={(val: string | null) => field.onChange(val ?? '')}
           onBlur={field.onBlur}
-          {...(kp(error, helpText, inputType) as any)}
+          {...(kp(error, helpText, inputType) as Record<string, unknown>)}
         />
       )}
     />
@@ -59,16 +55,16 @@ export function ZdsInput({
 }
 
 // ---------------------------------------------------------------------------
-// Date input  →  ReactDateInput (@zurich/css-components) — ZrDatePicker pendiente
+// Date input  →  ReactDateInput (@zurich/css-components)
 // ---------------------------------------------------------------------------
-export function ZdsDate({
+export function ZdsDate<TFV extends FieldValues>({
   control, name, label, required, readOnly, helpText, error, rules,
-}: Omit<InputProps, 'inputType'>) {
+}: Omit<InputProps<TFV>, 'inputType'>) {
   return (
     <Controller
       name={name}
       control={control}
-      rules={rules}
+      rules={rules as RegisterOptions<TFV, typeof name>}
       render={({ field }) => (
         <ReactDateInput
           name={field.name}
@@ -77,9 +73,9 @@ export function ZdsDate({
           required={required}
           readonly={readOnly}
           invalid={!!error}
-          onChange={(val: string) => field.onChange(val)}
+          onChange={(val: string | null) => field.onChange(val ?? '')}
           onBlur={field.onBlur}
-          {...(kp(error, helpText) as any)}
+          {...(kp(error, helpText) as Record<string, unknown>)}
         />
       )}
     />
@@ -89,11 +85,11 @@ export function ZdsDate({
 // ---------------------------------------------------------------------------
 // Checkbox  →  ZrCheckbox (@zurich/web-components)
 // ---------------------------------------------------------------------------
-export function ZdsCheckboxField({
+export function ZdsCheckboxField<TFV extends FieldValues>({
   control, name, label,
 }: {
-  control: ZControl;
-  name: ZField;
+  control: Control<TFV>;
+  name: FieldPath<TFV>;
   label: string;
 }) {
   return (
@@ -105,7 +101,7 @@ export function ZdsCheckboxField({
           name={field.name}
           model={!!field.value}
           label={label}
-          onChange={(val: boolean) => field.onChange(val)}
+          onChange={(val: boolean | null) => field.onChange(val ?? false)}
           onBlur={field.onBlur}
         />
       )}
@@ -118,12 +114,12 @@ export function ZdsCheckboxField({
 // ---------------------------------------------------------------------------
 type ZdsOption = { value: string; label?: string; text?: string; disabled?: boolean };
 
-interface SelectProps {
-  control: ZControl;
-  name: ZField;
+interface SelectProps<TFV extends FieldValues> {
+  control: Control<TFV>;
+  name: FieldPath<TFV>;
   label: string;
   options: readonly ZdsOption[];
-  rules?: RegisterOptions;
+  rules?: RegisterOptions<TFV, FieldPath<TFV>>;
   required?: boolean;
   disabled?: boolean;
   loading?: boolean;
@@ -133,13 +129,13 @@ interface SelectProps {
   withSearch?: boolean;
 }
 
-export function ZdsSelect({
+export function ZdsSelect<TFV extends FieldValues>({
   control, name, label, options, rules, required, disabled, loading,
   error, helpText, placeholder, withSearch,
-}: SelectProps) {
+}: SelectProps<TFV>) {
   const zdsOptions = options.map((o) => ({
-    value: o.value,
-    text:  o.text ?? o.label ?? o.value,
+    value:    o.value,
+    text:     o.text ?? o.label ?? o.value,
     disabled: o.disabled,
   }));
 
@@ -151,7 +147,7 @@ export function ZdsSelect({
     <Controller
       name={name}
       control={control}
-      rules={rules}
+      rules={rules as RegisterOptions<TFV, typeof name>}
       render={({ field }) => (
         <ZrSelect
           name={field.name}
@@ -163,7 +159,7 @@ export function ZdsSelect({
           invalid={!!error}
           helpText={error ?? helpText ?? (loading ? 'Cargando opciones...' : undefined)}
           withSearch={withSearch}
-          onChange={(val: string) => field.onChange(val)}
+          onChange={(val: string | null) => field.onChange(val ?? '')}
           onBlur={() => field.onBlur()}
         />
       )}

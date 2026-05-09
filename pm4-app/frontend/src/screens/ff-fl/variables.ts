@@ -196,99 +196,101 @@ export const WATCHERS = {
 // ---------------------------------------------------------------------------
 // Tipo del formulario
 // ---------------------------------------------------------------------------
+// Todos los campos son opcionales: react-hook-form usa DeepPartial internamente
+// y los campos con required son validados vía las reglas de cada field, no por el tipo TS.
 export interface FfFlSolicitudFormData {
   // Encabezado
-  frm_gen_nro_cotizacion: string;
+  frm_gen_nro_cotizacion?: string;
 
   // Información general
-  frm_gen_sucursal: string;
-  frm_gen_fecha_solicitud: string;
-  frm_gen_usuario: string;
-  frm_gen_segmento: string;
-  frm_gen_linea_negocio: string;
-  frm_gen_tipo_produccion: string;
-  frm_gen_canal_comercial: string;
-  frm_gen_comercial: string;
+  frm_gen_sucursal?: string;
+  frm_gen_fecha_solicitud?: string;
+  frm_gen_usuario?: string;
+  frm_gen_segmento?: string;
+  frm_gen_linea_negocio?: string;
+  frm_gen_tipo_produccion?: string;
+  frm_gen_canal_comercial?: string;
+  frm_gen_comercial?: string;
 
   // Productos a cotizar (checkboxes)
-  frm_gen_prod_dyo: boolean;
-  frm_gen_prod_cc: boolean;
-  frm_gen_prod_pdysi: boolean;
-  frm_gen_prod_pi: boolean;
+  frm_gen_prod_dyo?: boolean;
+  frm_gen_prod_cc?: boolean;
+  frm_gen_prod_pdysi?: boolean;
+  frm_gen_prod_pi?: boolean;
 
-  frm_gen_tipo_negocio: string;
-  frm_gen_nueva_renovacion: string;
-  frm_gen_nro_poliza: string;
-  frm_gen_intermediario: string;
-  frm_gen_correo_intermediario: string;
-  frm_gen_correo_adicional_1: string;
-  frm_gen_correo_adicional_2: string;
-  frm_gen_correo_adicional_3: string;
+  frm_gen_tipo_negocio?: string;
+  frm_gen_nueva_renovacion?: string;
+  frm_gen_nro_poliza?: string;
+  frm_gen_intermediario?: string;
+  frm_gen_correo_intermediario?: string;
+  frm_gen_correo_adicional_1?: string;
+  frm_gen_correo_adicional_2?: string;
+  frm_gen_correo_adicional_3?: string;
 
   // Información del tomador (de TIA)
-  frm_tom_nit: string;
-  frm_tom_tomador: string;
-  frm_tom_direccion: string;
-  frm_tom_departamento: string;
-  frm_tom_ciudad: string;
-  frm_tom_correo_facturacion: string;
-  frm_tom_sector: string;
-  frm_tom_detalle_actividad: string;
+  frm_tom_nit?: string;
+  frm_tom_tomador?: string;
+  frm_tom_direccion?: string;
+  frm_tom_departamento?: string;
+  frm_tom_ciudad?: string;
+  frm_tom_correo_facturacion?: string;
+  frm_tom_sector?: string;
+  frm_tom_detalle_actividad?: string;
 
   // Actividades aseguradas por producto
-  frm_act_dyo_actividad: string;
-  frm_act_dyo_cod_ciiu: string;
-  frm_act_dyo_cod_naic: string;
-  frm_act_cc_actividad: string;
-  frm_act_cc_cod_ciiu: string;
-  frm_act_cc_cod_naic: string;
-  frm_act_pdysi_actividad: string;
-  frm_act_pdysi_cod_ciiu: string;
-  frm_act_pdysi_cod_naic: string;
-  frm_act_pi_actividad: string;
-  frm_act_pi_cod_ciiu: string;
-  frm_act_pi_cod_naic: string;
+  frm_act_dyo_actividad?: string;
+  frm_act_dyo_cod_ciiu?: string;
+  frm_act_dyo_cod_naic?: string;
+  frm_act_cc_actividad?: string;
+  frm_act_cc_cod_ciiu?: string;
+  frm_act_cc_cod_naic?: string;
+  frm_act_pdysi_actividad?: string;
+  frm_act_pdysi_cod_ciiu?: string;
+  frm_act_pdysi_cod_naic?: string;
+  frm_act_pi_actividad?: string;
+  frm_act_pi_cod_ciiu?: string;
+  frm_act_pi_cod_naic?: string;
 
   // Datos de la cotización
-  frm_cot_inicio_vigencia: string;
-  frm_cot_fin_vigencia: string;
-  frm_cot_dias: number;
-  frm_cot_moneda: string;
-  frm_cot_comision: number;
-  frm_cot_soporte_ofrecido: number;
-  frm_cot_num_empleados: string;
-  frm_cot_num_predios: string;
-  frm_cot_fact_anual_dyo: string;
-  frm_cot_fact_anual_cc: string;
-  frm_cot_fact_anual_pdysi: string;
-  frm_cot_fact_anual_pi: string;
+  frm_cot_inicio_vigencia?: string;
+  frm_cot_fin_vigencia?: string;
+  frm_cot_dias?: number;
+  frm_cot_moneda?: string;
+  frm_cot_comision?: number;
+  frm_cot_soporte_ofrecido?: number;
+  frm_cot_num_empleados?: string;
+  frm_cot_num_predios?: string;
+  frm_cot_fact_anual_dyo?: string;
+  frm_cot_fact_anual_cc?: string;
+  frm_cot_fact_anual_pdysi?: string;
+  frm_cot_fact_anual_pi?: string;
   // Modalidades de cobertura (campos ocultos, seteados automáticamente)
-  frm_cot_modalidad_dyo: string;
-  frm_cot_modalidad_cc: string;
-  frm_cot_modalidad_pdysi: string;
-  frm_cot_modalidad_pi: string;
+  frm_cot_modalidad_dyo?: string;
+  frm_cot_modalidad_cc?: string;
+  frm_cot_modalidad_pdysi?: string;
+  frm_cot_modalidad_pi?: string;
 
   // Plan de pago
-  frm_plan_plan_pago: string;
-  frm_plan_num_cuotas: string;
-  frm_plan_medio_pago: string;
-  frm_plan_frecuencia_cobro: string;
+  frm_plan_plan_pago?: string;
+  frm_plan_num_cuotas?: string;
+  frm_plan_medio_pago?: string;
+  frm_plan_frecuencia_cobro?: string;
 
   // Creación de tomador - Persona Jurídica (si TIA no retorna datos)
-  frm_cre_nombre_compania: string;
-  frm_cre_tipo_doc: string;
-  frm_cre_nro_doc: string;
-  frm_cre_fecha_expedicion: string;
-  frm_cre_tipo_empresa: string;
-  frm_cre_fecha_constitucion: string;
-  frm_cre_actividad_comercial: string;
-  frm_cre_num_duns: string;
-  frm_cre_estado_tercero: string;
-  frm_cre_nombre_rep_legal: string;
-  frm_cre_tipo_doc_rep_legal: string;
-  frm_cre_nro_doc_rep_legal: string;
-  frm_cre_direccion: string;
-  frm_cre_departamento: string;
-  frm_cre_ciudad: string;
-  frm_cre_correo_facturacion: string;
+  frm_cre_nombre_compania?: string;
+  frm_cre_tipo_doc?: string;
+  frm_cre_nro_doc?: string;
+  frm_cre_fecha_expedicion?: string;
+  frm_cre_tipo_empresa?: string;
+  frm_cre_fecha_constitucion?: string;
+  frm_cre_actividad_comercial?: string;
+  frm_cre_num_duns?: string;
+  frm_cre_estado_tercero?: string;
+  frm_cre_nombre_rep_legal?: string;
+  frm_cre_tipo_doc_rep_legal?: string;
+  frm_cre_nro_doc_rep_legal?: string;
+  frm_cre_direccion?: string;
+  frm_cre_departamento?: string;
+  frm_cre_ciudad?: string;
+  frm_cre_correo_facturacion?: string;
 }
