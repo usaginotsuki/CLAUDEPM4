@@ -566,8 +566,9 @@ export default function SolicitudFfFl() {
     setProductError('');
     setSubmitError('');
     try {
+      const { _user: _u, _request: _r, ...taskData } = (task?.data ?? {}) as Record<string, unknown>;
       const payload: Record<string, unknown> = {
-        ...(task?.data ?? {}),
+        ...taskData,
         ...(data as unknown as Record<string, unknown>),
       };
       await completeTask(payload);
