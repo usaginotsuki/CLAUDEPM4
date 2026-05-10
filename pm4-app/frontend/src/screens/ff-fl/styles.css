@@ -119,6 +119,7 @@
 
 .form-section-body {
   padding: 24px 28px 12px;
+  overflow: visible;
 }
 
 /* Sub-secciones dentro de un card */
@@ -152,11 +153,70 @@
 /* ──────────────────────────────────────
    GRID DE COLUMNAS
 ────────────────────────────────────── */
-.form-row { display: grid; gap: 18px; margin-bottom: 6px; }
+.form-row { display: grid; gap: 18px; margin-bottom: 6px; overflow: visible; }
 .form-row.cols-1 { grid-template-columns: 1fr; }
 .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
 .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
 .form-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+/* ──────────────────────────────────────
+   CAMPOS ZURICH — EDITABLE vs READONLY
+────────────────────────────────────── */
+
+/* El wrapper base: establece contexto de posicionamiento para el select overlay */
+.zds-field-wrap {
+  width: 100%;
+}
+
+/* Campos editables → fondo blanco (comportamiento natural de Zurich) */
+zr-text-input:not([readonly]),
+react-date-input:not([readonly]) {
+  background: #fff;
+  border-radius: 28px;
+}
+
+/* Campos readonly → fondo gris pálido para distinguirlos visualmente */
+zr-text-input[readonly],
+react-date-input[readonly] {
+  background: #f1f5f9;
+  border-radius: 28px;
+}
+
+/* Refuerzo vía wrapper cuando readonly */
+[data-zds-readonly] zr-text-input,
+[data-zds-readonly] react-date-input {
+  background: #f1f5f9;
+  border-radius: 28px;
+}
+
+/* ──────────────────────────────────────
+   SELECT OVERLAY — evita que el dropdown
+   empuje el contenido hacia abajo
+────────────────────────────────────── */
+
+/*
+ * La celda del grid ocupa solo la altura cerrada del campo.
+ * El zr-select se posiciona absolute dentro del wrapper, por lo que
+ * cuando el dropdown se abre crece hacia abajo sobre el contenido.
+ */
+.zds-select-wrap {
+  position: relative;
+  height: 68px;      /* altura aproximada del campo cerrado (label + input Zurich shaped) */
+  overflow: visible;
+  z-index: 0;
+}
+
+/* Cuando el select tiene foco (dropdown abierto), sube su z-index */
+.zds-select-wrap:focus-within {
+  z-index: 200;
+}
+
+/* El select es absolute dentro del wrapper → no expande la celda del grid */
+.zds-select-wrap > * {
+  position: absolute;
+  width: 100%;
+  top: 0;
+}
 
 @media (max-width: 900px) {
   .form-row.cols-3,
@@ -331,6 +391,50 @@
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: .3px;
+}
+
+/* ──────────────────────────────────────
+   SUGGEST (TYPEAHEAD)
+────────────────────────────────────── */
+.zds-suggest-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.suggest-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--z-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 300;
+}
+
+.suggest-option {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--z-text);
+  cursor: pointer;
+  transition: background .1s;
+  line-height: 1.4;
+}
+
+.suggest-option:hover {
+  background: var(--z-blue-light);
+  color: var(--z-blue);
+}
+
+.suggest-option strong {
+  font-weight: 700;
+  color: var(--z-blue);
 }
 
 /* ──────────────────────────────────────

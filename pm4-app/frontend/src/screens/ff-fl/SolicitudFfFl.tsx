@@ -2,11 +2,12 @@ import { useEffect, useState, useMemo } from 'react';
 import { useForm, FieldError } from 'react-hook-form';
 import './styles.css';
 import { useTask } from '../../core/useTask';
+import pm4 from '../../api/pm4Client';
 import { useCollection } from '../../core/useCollection';
 import FormSection from '../../components/FormSection';
 import CreacionTomador from './CreacionTomador';
 import zurichLogo from '../../resources/zurich/ZurichLogo_Horz_White_CMYK_no_R.png';
-import { ZdsInput, ZdsDate, ZdsCheckboxField, ZdsSelect } from './ZdsField';
+import { ZdsInput, ZdsDate, ZdsCheckboxField, ZdsSelect, ZdsSuggest } from './ZdsField';
 import { ReactButton } from '@zurich/css-components/react';
 import {
   OPTIONS, COLLECTION_DEFS, DEPARTAMENTOS, CIUDADES_POR_DEPTO,
@@ -134,12 +135,13 @@ function InfoGeneral({
       </div>
 
       <div className="form-row cols-2">
-        <ZdsSelect
+        <ZdsSuggest
           label="Intermediario"
           name="frm_gen_intermediario"
           control={control}
           options={intermediarios}
           loading={loadingInt}
+          rules={{ required: 'Campo requerido' }}
           required
           error={fe('frm_gen_intermediario')}
         />
@@ -187,9 +189,11 @@ function InfoGeneral({
 function InfoTomador({
   form,
   onConsultarNIT,
+  nitLoading,
 }: {
   form: ReturnType<typeof useForm<FfFlSolicitudFormData>>;
   onConsultarNIT: () => void;
+  nitLoading: boolean;
 }) {
   const { control, formState: { errors, isSubmitted }, watch, setValue } = form;
   const w = watch();
@@ -230,8 +234,8 @@ function InfoTomador({
         />
         <ZdsInput control={control} name="frm_tom_tomador" label="Tomador" readOnly helpText="Dato de TIA" />
         <div className="form-group consultar-wrapper">
-          <button type="button" className="btn-consultar" onClick={onConsultarNIT}>
-            🔍 Consultar TIA
+          <button type="button" className="btn-consultar" onClick={onConsultarNIT} disabled={nitLoading}>
+            {nitLoading ? '⏳ Consultando…' : '🔍 Consultar TIA'}
           </button>
         </div>
       </div>
@@ -474,6 +478,7 @@ export default function SolicitudFfFl() {
   const [productError, setProductError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [sent, setSent] = useState(false);
+  const [nitLoading, setNitLoading] = useState(false);
 
   const form = useForm<FfFlSolicitudFormData>({
     mode: 'onChange',
@@ -530,10 +535,88 @@ export default function SolicitudFfFl() {
     }
   };
 
-  const handleConsultarNIT = () => {
+  const handleConsultarNIT = async () => {
     const nit = form.getValues('frm_tom_nit');
     if (!nit) { setSubmitError('Ingrese el NIT primero.'); return; }
-    console.log('[watcher] Consultando NIT en TIA:', nit);
+
+    setNitLoading(true);
+    setSubmitError('');
+    console.log(`[TIA] ── INICIO consulta NIT ──────────────────────`);
+    console.log(`[TIA] NIT ingresado:`, nit);
+
+    try {
+      // 1. Token TIA: desde task.data o ejecutando script 43
+      let tokenTia: string = String((task?.data as Record<string, unknown>)?.frm_token_tia ?? '');
+      if (!tokenTia) {
+        console.log('[TIA] Token no en task.data → ejecutando script 43...');
+        const tokenRes = await pm4.post('/scripts/43/execute', { data: {}, config: {} });
+        console.log('[TIA] Script 43 respuesta completa:', JSON.stringify(tokenRes.data, null, 2));
+        const tOut = tokenRes.data?.response ?? tokenRes.data?.output ?? tokenRes.data ?? {};
+        tokenTia = String(tOut?.respuesta_token_tia ?? tOut?.token ?? tOut?.access_token ?? '');
+        console.log('[TIA] Token obtenido:', tokenTia ? `${tokenTia.slice(0, 30)}...` : '(vacío)');
+      } else {
+        console.log('[TIA] Token desde task.data:', `${tokenTia.slice(0, 30)}...`);
+      }
+
+      // 2. Script 50 = "Obtener cliente Tia"
+      const requestBody = {
+        data: {
+          frm_tomador_tipoDoc: 'NIT',
+          frm_tomador_numDoc:  nit,
+          respuesta_token_tia: tokenTia,
+        },
+        config: {},
+      };
+      console.log(`[TIA] POST /scripts/50/execute`, JSON.stringify(requestBody, null, 2));
+
+      const res = await pm4.post('/scripts/50/execute', requestBody);
+      console.log(`[TIA] HTTP ${res.status} — body completo:`, JSON.stringify(res.data, null, 2));
+
+      const output = res.data?.response ?? res.data?.output ?? res.data ?? {};
+      console.log(`[TIA] Output extraído:`, JSON.stringify(output, null, 2));
+
+      // 3. Mapear campos TIA → form
+      const mappings: Array<[string, keyof FfFlSolicitudFormData]> = [
+        ['frm_tomador',              'frm_tom_tomador'],
+        ['nombre',                   'frm_tom_tomador'],
+        ['frm_tom_tomador',          'frm_tom_tomador'],
+        ['direccion',                'frm_tom_direccion'],
+        ['frm_tom_direccion',        'frm_tom_direccion'],
+        ['departamento',             'frm_tom_departamento'],
+        ['frm_tom_departamento',     'frm_tom_departamento'],
+        ['ciudad',                   'frm_tom_ciudad'],
+        ['frm_tom_ciudad',           'frm_tom_ciudad'],
+        ['correo',                   'frm_tom_correo_facturacion'],
+        ['email',                    'frm_tom_correo_facturacion'],
+        ['frm_tom_correo_facturacion', 'frm_tom_correo_facturacion'],
+        ['sector',                   'frm_tom_sector'],
+        ['frm_tom_sector',           'frm_tom_sector'],
+        ['detalle_actividad',        'frm_tom_detalle_actividad'],
+        ['frm_tom_detalle_actividad', 'frm_tom_detalle_actividad'],
+      ];
+
+      let mapped = 0;
+      for (const [src, dest] of mappings) {
+        const val = (output as Record<string, unknown>)[src];
+        if (val !== undefined && val !== null && val !== '') {
+          console.log(`[TIA] Mapeando ${src} → ${dest} =`, val);
+          form.setValue(dest, String(val), { shouldDirty: true });
+          mapped++;
+        }
+      }
+      console.log(`[TIA] FIN — ${mapped} campos mapeados. Keys recibidos:`, Object.keys(output as object));
+      if (mapped === 0) {
+        setSubmitError('TIA respondió pero sin campos reconocibles. Ver consola.');
+      }
+
+    } catch (err: unknown) {
+      const e = err as { response?: { status: number; data: unknown }; message: string };
+      console.error(`[TIA] ERROR — status:`, e.response?.status ?? 'sin respuesta');
+      console.error(`[TIA] Body:`, JSON.stringify(e.response?.data ?? e.message, null, 2));
+      setSubmitError(`Error consultando TIA (${e.response?.status ?? 'red'}): ${JSON.stringify(e.response?.data ?? e.message)}`);
+    } finally {
+      setNitLoading(false);
+    }
   };
 
   if (loading) return <div className="screen-loading"><div className="spinner" /></div>;
@@ -575,7 +658,7 @@ export default function SolicitudFfFl() {
       <div className="screen-content">
         <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <InfoGeneral form={form} productError={productError} />
-          <InfoTomador form={form} onConsultarNIT={handleConsultarNIT} />
+          <InfoTomador form={form} onConsultarNIT={handleConsultarNIT} nitLoading={nitLoading} />
           <DatosCotizacion form={form} />
           <PlanPago form={form} />
 
