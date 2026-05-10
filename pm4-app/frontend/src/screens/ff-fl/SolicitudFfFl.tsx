@@ -335,8 +335,12 @@ function InfoTomador({
         </div>
       )}
 
-      <div className="section-spacer" />
-      <CreacionTomador form={form} forceOpen={nitNotFound} />
+      {nitNotFound && (
+        <>
+          <div className="section-spacer" />
+          <CreacionTomador form={form} />
+        </>
+      )}
     </FormSection>
   );
 }
