@@ -649,7 +649,7 @@ export default function SolicitudFfFl() {
         <div className="title-block">
           <h1>Cotizador Fast Flow — Líneas Financieras</h1>
           <div className="subtitle">
-            <span>Cotización # {form.watch('frm_gen_nro_cotizacion') || '—'}</span>
+            <span>Cotización # {form.watch('frm_gen_num_cotizacion') || '—'}</span>
           </div>
         </div>
         <img src={zurichLogo} alt="Zurich" className="header-logo" />

@@ -200,7 +200,7 @@ export const WATCHERS = {
 // y los campos con required son validados vía las reglas de cada field, no por el tipo TS.
 export interface FfFlSolicitudFormData {
   // Encabezado
-  frm_gen_nro_cotizacion?: string;
+  frm_gen_num_cotizacion?: string;
 
   // Información general
   frm_gen_sucursal?: string;
