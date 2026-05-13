@@ -285,6 +285,7 @@ function SeccionDecision({
       <div className="co-product-header">Decisión</div>
       <div className="co-card-body">
         <ZrForm style={{ ['--z-form--gap' as any]: 'var(--zs-150)' }}>
+          <>
           <div className="form-row cols-2">
             <ZdsSelect
               label="Decisión"
@@ -365,7 +366,7 @@ function SeccionDecision({
                       if (file) setValue('cot_orden_firme_nombre', file.name);
                     }}
                   />
-                  <ZrButton config="secondary" icon="upload:line" onClick={() => fileRef.current?.click()}>
+                  <ZrButton config="secondary" icon="file-upload:line" onClick={() => fileRef.current?.click()}>
                     {w.cot_orden_firme_nombre ?? 'Cargar archivo'}
                   </ZrButton>
                   {w.cot_orden_firme_nombre && (
@@ -388,6 +389,7 @@ function SeccionDecision({
               </div>
             </>
           )}
+          </>
         </ZrForm>
 
         {submitError && (

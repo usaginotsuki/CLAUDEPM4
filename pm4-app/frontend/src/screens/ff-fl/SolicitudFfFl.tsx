@@ -336,8 +336,6 @@ function InfoTomador({
         />
       </div>
 
-      </ZrForm>
-
       {actRows.length > 0 && (
         <div className="form-subsection form-subsection--activities">
           <div className="form-subsection-title">Actividades aseguradas</div>
@@ -452,7 +450,6 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
       <input type="hidden" {...register('frm_cot_modalidad_cc')} />
       <input type="hidden" {...register('frm_cot_modalidad_pdysi')} />
       <input type="hidden" {...register('frm_cot_modalidad_pi')} />
-      </ZrForm>
 
       {w.frm_gen_prod_cc && (
         <div className="form-row cols-2" style={{ padding: '0 var(--zs-200) var(--zs-100)' }}>
@@ -508,11 +505,6 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
           </div>
         </div>
       )}
-
-      <input type="hidden" {...register('frm_cot_modalidad_dyo')} />
-      <input type="hidden" {...register('frm_cot_modalidad_cc')} />
-      <input type="hidden" {...register('frm_cot_modalidad_pdysi')} />
-      <input type="hidden" {...register('frm_cot_modalidad_pi')} />
 
     </FormSection>
   );
