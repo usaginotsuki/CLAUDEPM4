@@ -43,7 +43,14 @@ async function pm4Request(method: string, path: string, req: Request, res: Respo
 // Tasks
 router.get('/tasks', (req, res) => pm4Request('GET', '/tasks', req, res));
 router.get('/tasks/:id', (req, res) => pm4Request('GET', `/tasks/${req.params.id}`, req, res));
-router.put('/tasks/:id', (req, res) => pm4Request('PUT', `/tasks/${req.params.id}`, req, res));
+const PM4_INTERNAL_KEYS = ['_user', '_request'];
+
+router.put('/tasks/:id', (req, res) => {
+  if (req.body?.data && typeof req.body.data === 'object') {
+    PM4_INTERNAL_KEYS.forEach(k => delete req.body.data[k]);
+  }
+  pm4Request('PUT', `/tasks/${req.params.id}`, req, res);
+});
 
 // Requests (casos)
 router.get('/requests/:id', (req, res) => pm4Request('GET', `/requests/${req.params.id}`, req, res));

@@ -4,6 +4,7 @@ import SolicitudFfFl from './screens/ff-fl/SolicitudFfFl';
 import CotizacionFfFl from './screens/ff-fl/CotizacionFfFl';
 import RespuestaCotizacion from './screens/respuesta-cotizacion/RespuestaCotizacion';
 import OpcionesCotizacion from './screens/opciones-cotizacion/OpcionesCotizacion';
+import VisualizarDocumentos from './screens/nota-cobertura/VisualizarDocumentos';
 
 const SCREENS: Record<string, React.ComponentType> = {
   'cotizador-fast-flow': CotizadorFastFlow,
@@ -12,6 +13,7 @@ const SCREENS: Record<string, React.ComponentType> = {
   'ff-fl-cotizacion': CotizacionFfFl,
   'respuesta-cotizacion': RespuestaCotizacion,
   'opciones-cotizacion': OpcionesCotizacion,
+  'nota-cobertura': VisualizarDocumentos,
 };
 
 export default function App() {

@@ -10,7 +10,6 @@ import SeccionProductos from './SeccionProductos';
 import zurichLogo from '../../resources/zurich/ZurichLogo_Horz_White_CMYK_no_R.png';
 import { ZdsInput, ZdsDate, ZdsCheckboxField, ZdsSelect, ZdsSuggest } from './ZdsField';
 import { ZrButton } from '@zurich/web-components/react/button';
-import { ZrForm }   from '@zurich/web-components/react/form';
 import {
   OPTIONS, COLLECTION_DEFS, DEPARTAMENTOS, CIUDADES_POR_DEPTO,
   FfFlSolicitudFormData,
@@ -53,8 +52,8 @@ function InfoGeneral({
   ] as const;
 
   return (
-    <FormSection title="Información General" color="var(--zc-blue-zurich)">
-      <ZrForm style={{ ['--z-form--gap' as any]: 'var(--zs-150)' }}>
+    <FormSection title="Información General" color="#2167AE">
+
       <div className="form-row cols-3">
         <ZdsSelect
           label="Sucursal"
@@ -182,7 +181,7 @@ function InfoGeneral({
           ))}
         </div>
       </div>
-      </ZrForm>
+
     </FormSection>
   );
 }
@@ -215,21 +214,42 @@ function InfoTomador({
   const ciudades = useMemo(() => CIUDADES_POR_DEPTO[w.frm_tom_departamento ?? ''] ?? [], [w.frm_tom_departamento]);
   useEffect(() => { setValue('frm_tom_ciudad', ''); }, [w.frm_tom_departamento, setValue]);
 
-  const { options: actDyO, loading: loadActDyO } = useCollection(w.frm_gen_prod_dyo ? COLLECTION_DEFS.actividadesDyO : null);
-  const { options: actCC, loading: loadActCC } = useCollection(w.frm_gen_prod_cc ? COLLECTION_DEFS.actividadesCC : null);
-  const { options: actPDySI, loading: loadActPDySI } = useCollection(w.frm_gen_prod_pdysi ? COLLECTION_DEFS.actividadesPDySI : null);
-  const { options: actPI, loading: loadActPI } = useCollection(w.frm_gen_prod_pi ? COLLECTION_DEFS.actividadesPI : null);
+  const anyProductSelected = w.frm_gen_prod_dyo || w.frm_gen_prod_cc || w.frm_gen_prod_pdysi || w.frm_gen_prod_pi;
+  const { options: actOpts, loading: loadAct, rawMap: actRawMap } = useCollection(anyProductSelected ? COLLECTION_DEFS.actividadesCIIU : null);
+
+  // Auto-rellena CIIU y NAIC cuando el usuario elige una actividad
+  useEffect(() => {
+    const pairs = [
+      { act: w.frm_act_dyo_actividad,   ciu: 'frm_act_dyo_cod_ciiu'   as const, naic: 'frm_act_dyo_cod_naic'   as const },
+      { act: w.frm_act_cc_actividad,    ciu: 'frm_act_cc_cod_ciiu'    as const, naic: 'frm_act_cc_cod_naic'    as const },
+      { act: w.frm_act_pdysi_actividad, ciu: 'frm_act_pdysi_cod_ciiu' as const, naic: 'frm_act_pdysi_cod_naic' as const },
+      { act: w.frm_act_pi_actividad,    ciu: 'frm_act_pi_cod_ciiu'    as const, naic: 'frm_act_pi_cod_naic'    as const },
+    ];
+    for (const { act, ciu, naic } of pairs) {
+      if (!act) continue;
+      const rec = actRawMap[act] as { data?: Record<string, unknown> } | undefined;
+      if (!rec) continue;
+      const d = rec.data ?? {};
+      console.log('[actividades] record para', act, d);
+      setValue(ciu,  String(d.frm_ciiu  ?? d.frm_codigo_ciiu  ?? d.frm_codigo ?? ''));
+      setValue(naic, String(d.frm_naic  ?? d.frm_codigo_naic  ?? ''));
+    }
+  }, [
+    w.frm_act_dyo_actividad, w.frm_act_cc_actividad,
+    w.frm_act_pdysi_actividad, w.frm_act_pi_actividad,
+    actRawMap, setValue,
+  ]);
 
   const actRows = [
-    w.frm_gen_prod_dyo ? { prod: 'D&O', actField: 'frm_act_dyo_actividad' as const, ciuField: 'frm_act_dyo_cod_ciiu' as const, naicField: 'frm_act_dyo_cod_naic' as const, options: actDyO, loading: loadActDyO } : null,
-    w.frm_gen_prod_cc ? { prod: 'Crimen Comercial', actField: 'frm_act_cc_actividad' as const, ciuField: 'frm_act_cc_cod_ciiu' as const, naicField: 'frm_act_cc_cod_naic' as const, options: actCC, loading: loadActCC } : null,
-    w.frm_gen_prod_pdysi ? { prod: 'PDySI', actField: 'frm_act_pdysi_actividad' as const, ciuField: 'frm_act_pdysi_cod_ciiu' as const, naicField: 'frm_act_pdysi_cod_naic' as const, options: actPDySI, loading: loadActPDySI } : null,
-    w.frm_gen_prod_pi ? { prod: 'Seg. Profesional', actField: 'frm_act_pi_actividad' as const, ciuField: 'frm_act_pi_cod_ciiu' as const, naicField: 'frm_act_pi_cod_naic' as const, options: actPI, loading: loadActPI } : null,
+    w.frm_gen_prod_dyo ? { prod: 'D&O', actField: 'frm_act_dyo_actividad' as const, ciuField: 'frm_act_dyo_cod_ciiu' as const, naicField: 'frm_act_dyo_cod_naic' as const, options: actOpts, loading: loadAct } : null,
+    w.frm_gen_prod_cc ? { prod: 'Crimen Comercial', actField: 'frm_act_cc_actividad' as const, ciuField: 'frm_act_cc_cod_ciiu' as const, naicField: 'frm_act_cc_cod_naic' as const, options: actOpts, loading: loadAct } : null,
+    w.frm_gen_prod_pdysi ? { prod: 'PDySI', actField: 'frm_act_pdysi_actividad' as const, ciuField: 'frm_act_pdysi_cod_ciiu' as const, naicField: 'frm_act_pdysi_cod_naic' as const, options: actOpts, loading: loadAct } : null,
+    w.frm_gen_prod_pi ? { prod: 'Seg. Profesional', actField: 'frm_act_pi_actividad' as const, ciuField: 'frm_act_pi_cod_ciiu' as const, naicField: 'frm_act_pi_cod_naic' as const, options: actOpts, loading: loadAct } : null,
   ].filter((r): r is NonNullable<typeof r> => r !== null);
 
   return (
-    <FormSection title="Información del Tomador" color="var(--zc-blue-zurich)">
-      <ZrForm style={{ ['--z-form--gap' as any]: 'var(--zs-150)' }}>
+    <FormSection title="Información del Tomador" color="#2167AE">
+
       <div className="form-row cols-3 row-align-bottom">
         <ZdsInput
           control={control}
@@ -319,7 +339,7 @@ function InfoTomador({
       </ZrForm>
 
       {actRows.length > 0 && (
-        <div className="form-subsection" style={{ marginTop: 'var(--zs-50)' }}>
+        <div className="form-subsection form-subsection--activities">
           <div className="form-subsection-title">Actividades aseguradas</div>
           <div className="actividades-table">
             <div className="actividades-table-header">
@@ -331,7 +351,7 @@ function InfoTomador({
               <div key={prod} className="actividades-table-row">
                 <span className="actividades-prod-label">{prod}</span>
                 <div className="actividades-cell">
-                  <ZdsSelect
+                  <ZdsSuggest
                     label=""
                     name={actField}
                     control={control}
@@ -373,6 +393,7 @@ function InfoTomador({
           <CreacionTomador form={form} />
         </>
       )}
+
     </FormSection>
   );
 }
@@ -405,8 +426,8 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
   const hayProductos = w.frm_gen_prod_dyo || w.frm_gen_prod_cc || w.frm_gen_prod_pdysi || w.frm_gen_prod_pi;
 
   return (
-    <FormSection title="Datos de la Cotización" color="var(--zc-blue-zurich)">
-      <ZrForm style={{ ['--z-form--gap' as any]: 'var(--zs-150)' }}>
+    <FormSection title="Datos de la Cotización" color="#2167AE">
+
       <div className="form-row cols-4">
         <ZdsDate
           control={control}
@@ -457,7 +478,7 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
       )}
 
       {hayProductos && (
-        <div className="form-group" style={{ padding: '0 var(--zs-200) var(--zs-150)', marginTop: 4 }}>
+        <div className="form-group form-group--facturacion">
           <div className="form-label"><span className="required-star">* </span>Facturación total anual (COP)</div>
           <div className="facturacion-grid">
             {w.frm_gen_prod_dyo && (
@@ -487,6 +508,12 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
           </div>
         </div>
       )}
+
+      <input type="hidden" {...register('frm_cot_modalidad_dyo')} />
+      <input type="hidden" {...register('frm_cot_modalidad_cc')} />
+      <input type="hidden" {...register('frm_cot_modalidad_pdysi')} />
+      <input type="hidden" {...register('frm_cot_modalidad_pi')} />
+
     </FormSection>
   );
 }
@@ -497,8 +524,8 @@ function DatosCotizacion({ form }: { form: ReturnType<typeof useForm<FfFlSolicit
 function PlanPago({ form }: { form: ReturnType<typeof useForm<FfFlSolicitudFormData>> }) {
   const { control } = form;
   return (
-    <FormSection title="Plan de Pago" color="var(--zc-blue-zurich)">
-      <ZrForm style={{ ['--z-form--gap' as any]: 'var(--zs-150)' }}>
+    <FormSection title="Plan de Pago" color="#2167AE">
+
       <div className="form-row cols-2">
         <ZdsSelect label="Plan de pago" name="frm_plan_plan_pago" control={control} options={OPTIONS.planPago} />
         <ZdsInput control={control} name="frm_plan_num_cuotas" label="Número de cuotas" readOnly helpText="1 cuota por defecto" />
@@ -507,7 +534,7 @@ function PlanPago({ form }: { form: ReturnType<typeof useForm<FfFlSolicitudFormD
         <ZdsSelect label="Medio de pago" name="frm_plan_medio_pago" control={control} options={OPTIONS.medioPago} />
         <ZdsInput control={control} name="frm_plan_frecuencia_cobro" label="Frecuencia de cobro" readOnly helpText="Anual por defecto" />
       </div>
-      </ZrForm>
+
     </FormSection>
   );
 }
@@ -643,8 +670,9 @@ export default function SolicitudFfFl() {
     }
 
     try {
+      const { _user: _u, _request: _r, ...taskData } = (task?.data ?? {}) as Record<string, unknown>;
       const payload: Record<string, unknown> = {
-        ...(task?.data ?? {}),
+        ...taskData,
         ...(data as unknown as Record<string, unknown>),
       };
       await completeTask(payload);
