@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, FieldError } from 'react-hook-form';
 import './styles.css';
 import { useTask } from '../../core/useTask';
@@ -474,6 +474,7 @@ function PlanPago({ form }: { form: ReturnType<typeof useForm<CotizadorFormData>
 // ---------------------------------------------------------------------------
 export default function CotizadorFastFlow() {
   const { task, loading, error, submitting, completeTask } = useTask();
+  const [sent, setSent] = useState(false);
 
   const form = useForm<CotizadorFormData>({
     mode: 'onChange',
@@ -506,7 +507,7 @@ export default function CotizadorFastFlow() {
   const onSubmit = async (data: CotizadorFormData) => {
     try {
       await completeTask(data as unknown as Record<string, unknown>);
-      alert('Formulario enviado correctamente. La tarea fue completada.');
+      setSent(true);
     } catch (e) {
       alert(`Error al enviar: ${(e as Error).message}`);
     }
@@ -532,6 +533,27 @@ export default function CotizadorFastFlow() {
 
   if (error) {
     return <div className="screen-error">⚠️ Error cargando la tarea: {error}</div>;
+  }
+
+  if (sent) {
+    return (
+      <div className="screen-wrapper">
+        <div className="screen-header">
+          <div className="title-block"><h1>Cotizador Fast Flow</h1></div>
+          <ZurichLogo />
+        </div>
+        <div className="screen-sent-wrapper">
+          <div className="screen-sent">
+            <div className="screen-sent-icon">✓</div>
+            <div className="screen-sent-title">Solicitud enviada</div>
+            <div className="screen-sent-sub">
+              El formulario fue enviado correctamente a ProcessMaker.<br />
+              El proceso continuará al siguiente nodo automáticamente.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const caseNumber = form.watch('frm_caso') ?? task?.process_request_id ?? '—';

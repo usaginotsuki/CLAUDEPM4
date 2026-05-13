@@ -68,6 +68,7 @@ function DocumentCard({ file }: { file: Pm4File }) {
 // ──────────────────────────────────────────────────────────────
 export default function VisualizarDocumentos() {
   const { task, loading, error, submitting, completeTask } = useTask();
+  const [sent, setSent] = useState(false);
 
   const data = (task?.data ?? {}) as NotaCoberturaData;
   const requestId = task?.process_request_id ?? null;
@@ -77,6 +78,7 @@ export default function VisualizarDocumentos() {
     try {
       const { _user: _u, _request: _r, ...taskData } = (task?.data ?? {}) as Record<string, unknown>;
       await completeTask({ ...taskData });
+      setSent(true);
     } catch (err) {
       console.error('[VisualizarDocumentos] Error al derivar:', err);
       alert('Error al continuar. Revise la consola.');
@@ -84,6 +86,34 @@ export default function VisualizarDocumentos() {
   }
 
   // ── Estados de carga/error ───────────────────────────────────
+  if (sent) {
+    return (
+      <div className="nc-wrapper">
+        <div className="nc-header">
+          <div className="title-block">
+            <h1>{data.frm_titulo || 'VISUALIZAR DOCUMENTOS DE SALIDA'}</h1>
+          </div>
+          <img
+            src={LOGO}
+            alt="Zurich"
+            className="nc-header-logo"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+        <div className="screen-sent-wrapper">
+          <div className="screen-sent">
+            <div className="screen-sent-icon">✓</div>
+            <div className="screen-sent-title">Tarea derivada</div>
+            <div className="screen-sent-sub">
+              Los documentos fueron confirmados correctamente.<br />
+              El proceso continuará al siguiente nodo automáticamente.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="nc-wrapper">

@@ -562,6 +562,7 @@ function RevisionMora({ form }: { form: Form }) {
 export default function SolicitudCotizacionCuw() {
   const { task, loading, error, submitting, completeTask } = useTask();
 
+  const [sent, setSent] = useState(false);
   const [tomadorTia, setTomadorTia] = useState<TiaStatus>('idle');
   const [aseguradoTia, setAseguradoTia] = useState<TiaStatus>('idle');
   const [aseguradosAdicionales, setAseguradosAdicionales] = useState<AseguradoAdicional[]>([]);
@@ -660,7 +661,7 @@ export default function SolicitudCotizacionCuw() {
       payload.frm_lista_detalle_exportaciones = exportaciones;
       console.log('[submit] Enviando a PM4:', payload);
       await completeTask(payload);
-      alert('Formulario enviado correctamente. La tarea fue completada.');
+      setSent(true);
     } catch (e) {
       console.error('[submit] Error PM4:', e);
       alert(`Error al enviar: ${(e as Error).message}`);
@@ -669,6 +670,27 @@ export default function SolicitudCotizacionCuw() {
 
   if (loading) return <div className="screen-loading"><div className="spinner" /></div>;
   if (error) return <div className="screen-error">⚠️ Error cargando la tarea: {error}</div>;
+
+  if (sent) {
+    return (
+      <div className="screen-wrapper">
+        <div className="screen-header">
+          <div className="title-block"><h1>Solicitud de Cotización CUW</h1></div>
+          <ZurichLogo />
+        </div>
+        <div className="screen-sent-wrapper">
+          <div className="screen-sent">
+            <div className="screen-sent-icon">✓</div>
+            <div className="screen-sent-title">Solicitud enviada</div>
+            <div className="screen-sent-sub">
+              La solicitud fue enviada correctamente a ProcessMaker.<br />
+              El proceso continuará al siguiente nodo automáticamente.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const cotizacion = form.watch('frm_num_cotizacion_cuw_col') ?? task?.process_request_id ?? '—';
   const caso = form.watch('frm_caso_cuw_col') ?? '—';

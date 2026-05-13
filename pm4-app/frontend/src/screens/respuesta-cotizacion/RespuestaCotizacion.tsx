@@ -95,6 +95,7 @@ function ConfirmModal({ onConfirm, onCancel }: ConfirmProps) {
 export default function RespuestaCotizacion() {
   const { task, loading, error, submitting, completeTask } = useTask();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const data = (task?.data ?? {}) as unknown as RespuestaCotizacionData;
   const block = task ? getBlock(data) : null;
@@ -103,6 +104,7 @@ export default function RespuestaCotizacion() {
     setConfirmOpen(false);
     try {
       await completeTask({});
+      setSent(true);
     } catch (err) {
       console.error('[RespuestaCotizacion] Error al completar tarea:', err);
       alert('Error al finalizar la cotización. Revise la consola.');
@@ -126,6 +128,27 @@ export default function RespuestaCotizacion() {
         <div className="state-screen error-state">
           <strong>Error al cargar el resultado</strong>
           <span>{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (sent) {
+    return (
+      <div className="screen-wrapper">
+        <div className="screen-header">
+          <div className="title-block"><h1>{data.frm_titulo || 'RESULTADO DE LA COTIZACIÓN'}</h1></div>
+          <img src={LOGO} alt="Zurich" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        </div>
+        <div className="screen-sent-wrapper">
+          <div className="screen-sent">
+            <div className="screen-sent-icon">✓</div>
+            <div className="screen-sent-title">Tarea finalizada</div>
+            <div className="screen-sent-sub">
+              La cotización fue finalizada correctamente.<br />
+              El proceso continuará al siguiente nodo automáticamente.
+            </div>
+          </div>
         </div>
       </div>
     );

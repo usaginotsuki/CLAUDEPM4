@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTask } from '../../core/useTask';
 import { useRequestFiles, resolveFileId } from '../../core/useRequestFiles';
@@ -27,6 +27,7 @@ interface FormValues {
 // ---------------------------------------------------------------------------
 export default function OpcionesCotizacion() {
   const { task, loading, error, submitting, completeTask } = useTask();
+  const [sent, setSent] = useState(false);
 
   const data = (task?.data ?? {}) as unknown as OpcionesCotizacionData;
 
@@ -90,6 +91,7 @@ export default function OpcionesCotizacion() {
       payload.frm_respCot_personalizacion_excepcion = values.frm_respCot_personalizacion_excepcion;
 
       await completeTask(payload);
+      setSent(true);
     } catch (err) {
       console.error('[OpcionesCotizacion] Error al derivar:', err);
       alert('Error al derivar la tarea. Revise la consola.');
@@ -97,6 +99,33 @@ export default function OpcionesCotizacion() {
   }
 
   // ── States ──────────────────────────────────────────────────────────────
+  if (sent) {
+    return (
+      <div className="screen-wrapper">
+        <div className="screen-header">
+          <div className="title-block">
+            <h1>{data.frm_titulo || 'VISUALIZAR SLIP Y OPCIONES DE COTIZACIÓN'}</h1>
+          </div>
+          <img
+            src={LOGO}
+            alt="Zurich"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+        <div className="screen-sent-wrapper">
+          <div className="screen-sent">
+            <div className="screen-sent-icon">✓</div>
+            <div className="screen-sent-title">Decisión enviada</div>
+            <div className="screen-sent-sub">
+              La decisión fue enviada correctamente a ProcessMaker.<br />
+              El proceso continuará al siguiente nodo automáticamente.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="screen-wrapper">
