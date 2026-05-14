@@ -4,6 +4,8 @@ import { ZrButton } from '@zurich/web-components/react/button';
 import { ZrForm }   from '@zurich/web-components/react/form';
 import { ZdsInput, ZdsSelect } from './ZdsField';
 import { useTask } from '../../core/useTask';
+import { useRequestFiles, resolveFileId } from '../../core/useRequestFiles';
+import PdfViewer from '../../components/PdfViewer';
 import zurichLogo from '../../resources/zurich/ZurichLogo_Horz_White_CMYK_no_R.png';
 import './styles.css';
 
@@ -107,9 +109,6 @@ function NcToggle({ form, name }: { form: Form; name: keyof CotizFfFlFormData })
 function CardFooter({ form, ncField }: { form: Form; ncField: keyof CotizFfFlFormData }) {
   return (
     <div className="co-card-footer">
-      <ZrButton config="secondary" icon="file-text:line" onClick={() => {}}>
-        Ver Slip
-      </ZrButton>
       <div className="co-nc-toggle">
         <span className="co-nc-label">¿Enviar nota de cobertura?</span>
         <NcToggle form={form} name={ncField} />
@@ -423,6 +422,12 @@ export default function CotizacionFfFl() {
 
   const taskData = (task?.data ?? {}) as Record<string, unknown>;
 
+  const requestId      = task?.process_request_id ?? null;
+  const { files, loading: filesLoading } = useRequestFiles(requestId);
+  const slipFileId     = resolveFileId(taskData.output_slipCotizacion);
+  const slipFromFiles  = !slipFileId ? files.find((f) => f.file_name.toLowerCase().includes('slip')) : null;
+  const effectiveSlipId = slipFileId ?? slipFromFiles?.id ?? null;
+
   const hasDyo      = Boolean(taskData.frm_gen_prod_dyo);
   const hasCc       = Boolean(taskData.frm_gen_prod_cc);
   const hasPdysi    = Boolean(taskData.frm_gen_prod_pdysi);
@@ -566,6 +571,29 @@ export default function CotizacionFfFl() {
             <span className="co-info-value">
               {String(taskData.frm_cot_inicio_vigencia ?? '—')} — {String(taskData.frm_cot_fin_vigencia ?? '—')}
             </span>
+          </div>
+        </div>
+
+        {/* Slip de Cotización */}
+        <div className="co-section-title">Slip de Cotización</div>
+        <div className="co-product-card">
+          <div className="co-product-header">Slip de Cotización</div>
+          <div className="co-card-body">
+            {filesLoading && !effectiveSlipId && (
+              <div className="pdf-viewer-state">
+                <div className="pdf-spinner" />
+                <span>Buscando slip de cotización…</span>
+              </div>
+            )}
+            {effectiveSlipId && (
+              <PdfViewer fileId={effectiveSlipId} label="Slip de Cotización" height={700} />
+            )}
+            {!filesLoading && !effectiveSlipId && (
+              <div className="co-no-slip">
+                <span>📄</span>
+                <span>El slip de cotización no está disponible aún.</span>
+              </div>
+            )}
           </div>
         </div>
 

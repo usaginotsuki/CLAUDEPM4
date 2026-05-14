@@ -881,6 +881,61 @@ zr-date-input[readonly] {
 }
 
 /* ──────────────────────────────────────
+   PDF VIEWER (compartido)
+────────────────────────────────────── */
+.pdf-viewer { width: 100%; }
+
+.pdf-viewer-label {
+  font: var(--zf-capt-12--700);
+  color: var(--z-muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: var(--zs-50);
+}
+
+.pdf-viewer-state {
+  display: flex;
+  align-items: center;
+  gap: var(--zs-75);
+  padding: var(--zs-150);
+  background: var(--zg-white-zurich);
+  border: 1px solid var(--z-border);
+  border-radius: 8px;
+  color: var(--z-muted);
+  font: var(--zf-capt-13);
+}
+
+.pdf-viewer-error { color: var(--z-red); }
+
+.pdf-viewer-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--zs-50);
+}
+
+.pdf-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--z-border);
+  border-top-color: var(--z-blue);
+  border-radius: 50%;
+  animation: spin .9s linear infinite;
+  flex-shrink: 0;
+}
+
+.btn-download {
+  display: inline-block;
+  background: var(--z-blue);
+  color: var(--zg-white-zurich);
+  text-decoration: none;
+  padding: var(--zs-50) var(--zs-100);
+  border-radius: 6px;
+  font: var(--zf-capt-12--700);
+  letter-spacing: .4px;
+}
+.btn-download:hover { background: var(--z-blue-dark); }
+
+/* ──────────────────────────────────────
    COTIZACIONES (CO) — INFO BAR
 ────────────────────────────────────── */
 .co-info-bar {
@@ -1079,6 +1134,23 @@ zr-date-input[readonly] {
   background: var(--z-blue);
   box-shadow: inset 0 0 0 3px var(--zg-white);
 }
+
+/* ──────────────────────────────────────
+   COTIZACIONES (CO) — SIN SLIP
+────────────────────────────────────── */
+.co-no-slip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--zs-300) var(--zs-150);
+  gap: var(--zs-50);
+  color: var(--z-muted);
+  font: var(--zf-capt-14);
+  text-align: center;
+}
+
+.co-no-slip span:first-child { font-size: 36px; opacity: .5; }
 
 /* ──────────────────────────────────────
    COTIZACIONES (CO) — FOOTER DE TARJETA
