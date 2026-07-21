@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import pm4 from '../api/pm4Client';
+import { ZrButton, ZrLoader } from './fields/ZdsFields';
 
 interface Props {
   /** ID del archivo en PM4 */
@@ -19,39 +20,44 @@ interface Props {
  * Ruta backend usada: GET /api/files/{fileId}/contents
  */
 export default function PdfViewer({ fileId, label, height = 640, className = '' }: Props) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [strBlobUrl, setStrBlobUrl] = useState<string | null>(null);
+  const [blnLoading, setBlnLoading] = useState(false);
+  const [strError, setStrError] = useState<string | null>(null);
+  const [blnIsImage, setBlnIsImage] = useState(false);
   const prevUrl = useRef<string | null>(null);
 
   useEffect(() => {
     if (!fileId) {
-      setBlobUrl(null);
+      setStrBlobUrl(null);
       return;
     }
 
-    let active = true;
-    setLoading(true);
-    setError(null);
+    let blnActive = true;
+    setBlnLoading(true);
+    setStrError(null);
 
+    // Descargamos el binario del archivo y lo exponemos como blob URL.
     pm4.get(`/files/${fileId}/contents`, { responseType: 'blob' })
-      .then((r) => {
-        if (!active) return;
+      .then((in_objResponse) => {
+        if (!blnActive) return;
         // Revocar URL anterior para liberar memoria
         if (prevUrl.current) URL.revokeObjectURL(prevUrl.current);
-        const url = URL.createObjectURL(r.data as Blob);
-        prevUrl.current = url;
-        setBlobUrl(url);
+        const objBlob = in_objResponse.data as Blob;
+        // Las imágenes se muestran con <img> ajustado; el resto (PDF, etc.) en <iframe>.
+        setBlnIsImage(objBlob.type.startsWith('image/'));
+        const strUrl = URL.createObjectURL(objBlob);
+        prevUrl.current = strUrl;
+        setStrBlobUrl(strUrl);
       })
-      .catch((e) => {
-        if (!active) return;
-        const msg = e.response?.data?.message ?? e.message;
-        console.error('[PdfViewer] Error al cargar archivo:', msg);
-        setError(msg);
+      .catch((in_excError) => {
+        if (!blnActive) return;
+        const strMsg = in_excError.response?.data?.message ?? in_excError.message;
+        console.error('[PdfViewer] Error al cargar archivo:', strMsg);
+        setStrError(strMsg);
       })
-      .finally(() => { if (active) setLoading(false); });
+      .finally(() => { if (blnActive) setBlnLoading(false); });
 
-    return () => { active = false; };
+    return () => { blnActive = false; };
   }, [fileId]);
 
   // Cleanup al desmontar
@@ -59,36 +65,55 @@ export default function PdfViewer({ fileId, label, height = 640, className = '' 
     return () => { if (prevUrl.current) URL.revokeObjectURL(prevUrl.current); };
   }, []);
 
+  // Descarga el blob actual como archivo local mediante un enlace temporal.
+  const handleDownload = () => {
+    if (!strBlobUrl) return;
+    const objLink = document.createElement('a');
+    objLink.href = strBlobUrl;
+    objLink.download = label ?? 'documento.pdf';
+    document.body.appendChild(objLink);
+    objLink.click();
+    objLink.remove();
+  };
+
   if (!fileId) return null;
 
   return (
     <div className={`pdf-viewer ${className}`}>
       {label && <div className="pdf-viewer-label">{label}</div>}
 
-      {loading && (
+      {blnLoading && (
         <div className="pdf-viewer-state">
-          <div className="pdf-spinner" />
+          <ZrLoader style={{ ['--z-loader--size' as never]: '20px' }} />
           <span>Cargando documento…</span>
         </div>
       )}
 
-      {error && !loading && (
+      {strError && !blnLoading && (
         <div className="pdf-viewer-state pdf-viewer-error">
-          No se pudo cargar el documento: {error}
+          No se pudo cargar el documento: {strError}
         </div>
       )}
 
-      {blobUrl && !loading && (
+      {strBlobUrl && !blnLoading && (
         <>
-          <iframe
-            src={blobUrl}
-            title={label ?? 'Documento'}
-            style={{ width: '100%', height, border: 'none', borderRadius: 4 }}
-          />
+          {blnIsImage ? (
+            <img
+              src={strBlobUrl}
+              alt={label ?? 'Documento'}
+              style={{ width: '100%', height, objectFit: 'contain', display: 'block', borderRadius: 4, background: 'var(--zg-white-zurich)' }}
+            />
+          ) : (
+            <iframe
+              src={strBlobUrl}
+              title={label ?? 'Documento'}
+              style={{ width: '100%', height, border: 'none', borderRadius: 4 }}
+            />
+          )}
           <div className="pdf-viewer-actions">
-            <a href={blobUrl} download={label ?? 'documento.pdf'} className="btn-download">
+            <ZrButton config="secondary:s" icon="download:line" onClick={handleDownload}>
               Descargar
-            </a>
+            </ZrButton>
           </div>
         </>
       )}

@@ -11,6 +11,11 @@ Las pantallas se crean aquí con ayuda de Claude (este chat), **no dentro de PM4
 **Docs OpenAPI:** `../docs (4).json` (un nivel arriba de pm4-app)
 **Paquetes JSON de pantallas originales:** `../*.json` (un nivel arriba de pm4-app)
 
+**Stack (migrado a React 19, 2026-07-01):** React 19.2.7 + TypeScript 5.9.3 + Vite 8.1.2
+(frontend) · Express 5.2.1 + Node 24 (backend/proxy) · react-hook-form 7.80.0 ·
+`@zurich/web-components`/`css-components` 0.8.1 **vendorizados** en `frontend/vendor/*.tgz`
+(ver `Bootstrap y registro de ZDS` abajo y `frontend/vendor/README.md`).
+
 ---
 
 ## Cómo se ejecuta
@@ -35,10 +40,16 @@ http://localhost:5173/?screen=cotizador-fast-flow&task_id=123&token=eyJ...
 Siempre ejecutar el build completo antes de lanzar a git para garantizar que el deploy funcione correctamente:
 
 ```bash
-npm run build --workspace=frontend && npm run build --workspace=backend
+npm run build --workspace=frontend   # tsc + vite
+npm run build --workspace=backend    # tsc
+npm run lint  --workspace=frontend   # eslint
 ```
 
-Si alguno de los dos falla con errores de TypeScript o de empaquetado, **corregir antes de commitear**. No commitear con builds rotos.
+Si alguno falla con errores de TypeScript, lint o empaquetado, **corregir antes de commitear**. No commitear con builds rotos.
+
+> Según el entorno de cada dev, `npm` corre en local o dentro del contenedor. Si usas
+> Docker, antepón `docker exec -w /app pm4-app-container ` a cada comando y, como no hay
+> HMR en el mount, `docker restart pm4-app-container` para validar el cambio visual.
 
 ---
 
@@ -77,13 +88,12 @@ pm4-app/
     │   ├── useToken.ts           ← resolveToken() y resolveTaskId()
     │   ├── useTask.ts            ← GET /tasks/{id}?include=data  |  PUT /tasks/{id}
     │   └── useCollection.ts     ← GET /collections/{id}/records
-    ├── components/fields/        ← InputField, SelectField, RadioField, DateField
+    ├── components/fields/        ← ZdsFields.tsx (fachada única para Zurich DS)
     ├── components/FormSection.tsx
     └── screens/
         └── {screen-slug}/
             ├── variables.ts      ← OPTIONS estáticas, COLLECTIONS ids, tipos TS, WATCHERS
-            ├── styles.css        ← TODO el CSS de esta pantalla (Zurich base + específico)
-            └── NombrePantalla.tsx
+            └── NombrePantalla.tsx  ← Componente React. No crear styles.css por pantalla (DRY).
 ```
 
 ---
@@ -164,57 +174,6 @@ await completeTask(payload);
 | PDySI    | `frm_pdysi_doc_01_nombre`, `frm_pdysi_doc_02_nombre`, `frm_pdysi_doc_03_nombre` |
 | PI       | `frm_pi_doc_01_nombre`, `frm_pi_doc_02_nombre`, `frm_pi_doc_03_nombre` |
 
-### Estructura de un archivo en PM4 (`GET /requests/{id}/files`)
-
-PM4 devuelve cada archivo con esta estructura (verificada en producción):
-
-```json
-{
-  "id": 364,
-  "name": "ACTA DE ENTREGA RECEPCION",
-  "file_name": "ACTA_DE_ENTREGA_RECEPCION.pdf",
-  "mime_type": "application/pdf",
-  "size": 574820,
-  "custom_properties": {
-    "data_name": "doc_autorizacion_datos",
-    "createdBy": 1,
-    "updatedBy": 1
-  },
-  "process_request_id": 10066
-}
-```
-
-| Campo | Descripción |
-|---|---|
-| `id` | ID del archivo — usar para preview/download |
-| `name` | Nombre legible para mostrar al usuario |
-| `file_name` | Nombre físico del archivo con extensión |
-| `custom_properties.data_name` | **Clave del proceso** (`data_name` del upload) — usar para lookup |
-| `process_request_id` | Request al que pertenece (padre o hijo) |
-
-**Importante:** `data_name` está en `custom_properties.data_name`, **no** como campo top-level. Para buscar un archivo por su clave de proceso:
-
-```typescript
-const archivo = files.find((f) => f.custom_properties?.data_name === docKey);
-```
-
-### Archivos en subprocesos
-
-Cuando una pantalla corre dentro de un **subproceso**, `task.process_request_id` apunta al request del subproceso, no al proceso padre. Los archivos subidos en el proceso padre NO aparecen en el request del hijo.
-
-Para acceder a los archivos del padre, usar `resolveParentRequestId()` de `useRequestFiles`:
-
-```typescript
-import { useRequestFiles, resolveParentRequestId } from '../../core/useRequestFiles';
-
-const requestId       = task?.process_request_id ?? null;
-const parentRequestId = resolveParentRequestId((task?.data ?? {}) as Record<string, unknown>);
-const { files } = useRequestFiles(requestId, parentRequestId);
-// `files` combina archivos del request actual + del padre (deduplicados)
-```
-
-`resolveParentRequestId` lee `task.data._request.parent_request_id` que PM4 incluye automáticamente en los datos de tareas de subprocesos.
-
 ---
 
 ## API PM4 (endpoints disponibles en el proxy)
@@ -263,7 +222,7 @@ const { files } = useRequestFiles(requestId, parentRequestId);
    - `COLLECTIONS` — IDs de colecciones PM4 que usan los selects dinámicos
    - `WATCHERS` — definición de watchers (campo que observan, script ID, run_onload)
    - Interface TypeScript de los datos del formulario
-3. Crear `styles.css` con el CSS base de Zurich + específico de la pantalla
+3. **No crear `styles.css` local.** Sigue la **Jerarquía de decisión de UI** (sección abajo): reusar componentes/elementos del DS antes de crear, y CSS custom solo como último recurso. Todo estilo nuevo va **al final de `shared.css`**, DRY y **con tokens** (`--zs-*`, `--zf-*`, `--z-*`/`--zc-*`/`--zg-*`), nunca px/hex crudos. `shared.css` es la única hoja de estilos global permitida.
 4. Crear `NombrePantalla.tsx` — componente React (<300 líneas por archivo)
 5. Registrar en `App.tsx` en el objeto `SCREENS`
 
@@ -274,14 +233,139 @@ const { files } = useRequestFiles(requestId, parentRequestId);
 
 ---
 
+## Jerarquía de decisión de UI (OBLIGATORIO)
+
+Al construir UI hay **dos ejes** con escaleras distintas. Recorre cada una **de arriba abajo** y baja un escalón solo si el anterior no aplica. Antes de construir, lee `outputs/zds-cheatsheet.md` y `outputs/shared-css-catalog.md` (no el índice).
+
+### Eje A — Elemento *(qué es la cosa: campo, botón, pill, modal, card…)*
+1. **Componente propio existente** (ver inventario abajo) o wrapper de `ZdsFields` (`ZdsInput`, `ZdsSelect`, `ActionBar`, `ZdsStatusBadge`, `FormSection`…).
+2. **Componente Zurich DS documentado** en `outputs/` → consúmelo vía la fachada `ZdsFields`. **Nunca** importes `@zurich/...` en un screen.
+3. **Componente Zurich DS que existe pero NO está documentado** en `outputs/` → **DETENTE y consulta al usuario**: pídele pegar la doc oficial de ZDS, crea el `.md` en `outputs/react/<categoría>/` (plantilla §6.2 del index), y recién entonces úsalo (envuelto en `ZdsFields` si es un control). No inventes props/componentes de memoria.
+4. **Nada en el DS** → evalúa crear un **componente propio** (ver criterios).
+5. **Último recurso** → CSS custom tokenizado en `shared.css`.
+
+### Eje B — Layout *(cómo se acomoda: stack, fila, grid, alineación)*
+1. **Primitivos DS por atributo:** `z-flex` / `z-align` (flex), `z-grid="main"` + `column` (grilla de página). Es lo idiomático; **no escribas `display:flex` a mano** en el markup.
+2. **Clase/componente de layout existente:** `form-row.cols-*` (grilla de campos), `FormSection`, `ActionBar`.
+3. **Patrón nuevo reutilizable** → clase en `shared.css` **o** componente (ver bifurcación).
+4. **Último recurso** → CSS custom tokenizado.
+
+### Regla transversal (SIEMPRE, sin importar el escalón)
+- **Solo tokens:** `--zs-*` (espaciado), `--zf-*` (tipografía), `--z-*`/`--zc-*`/`--zg-*` (color). **Nunca** px/hex crudos (excepto `1px` de borde, radios, `line-height`, anchos puntuales).
+- **Nombra clases por componente/primitivo, nunca por pantalla.**
+- **CSS nuevo va al final de `shared.css`, DRY.**
+
+### ¿Clase o componente nuevo? *(bifurcación del escalón "crear")*
+- Concepto de UI reutilizable **con markup/comportamiento** → **componente** semántico (`ActionBar`, `FormRow`).
+- Patrón de **solo estilo** sin markup → **clase** en `shared.css`.
+- **NO** crear componentes genéricos de layout (`<Flex>`, `<Row>`, `<Col>`) → reinventa los primitivos DS.
+- **NO** envolver lo que ya es componente. Umbral de reúso **≥3** (o que encapsule comportamiento real).
+
+### Hechos de `z-flex`/`z-align` (verificados contra el CSS compilado)
+- Gaps válidos: `50 / 75 / 100 / 150 / 200 / 300` (= `--zs-*`). **No existe gap `25`** (4px) → ese caso queda como clase CSS.
+- `z-flex` por defecto es `align-items: stretch` (la doc local dice "center" y es **falso**).
+- **No** pongas `z-flex` sobre `ZrCard`/`ZrForm`/`ZrModal` (tienen su propio layout interno).
+- Sintaxis: `z-flex="col:150"` = columna gap 150; fila centrada a la derecha = `z-flex="75" z-align="right:center"`.
+
+## Componentes propios del proyecto (reusar antes de crear)
+
+| Componente | Import | Para qué |
+|---|---|---|
+| `FormSection` | `components/FormSection` | Card con header azul + body + footer opcional |
+| `ActionBar` | `components/ActionBar` | Barra de botones de submit al pie del form |
+| `ZdsStatusBadge` | `components/fields/ZdsFields` | Píldora de estado (`success`/`danger`/`info`/`neutral`) sobre `ZrBadge` |
+| `ScreenHeader` | `components/ScreenHeader` | Cabecera azul con título/subtítulo + logo Zurich |
+| `InfoBar` | `components/InfoBar` | Barra de pares label/valor |
+| `HelpModal` | `components/HelpModal` | Contenido de modal de ayuda (se monta dentro de `ZrModal`) |
+| `PreviewModal` | `components/PreviewModal` | Modal de vista previa de documento |
+| `PdfViewer` | `components/PdfViewer` | Visor de PDF/archivo PM4 vía blob |
+| `ResultCard` | `components/ResultCard` | Card centrado de resultado/confirmación (variantes) |
+| `DocList` / `DocItem` | `components/DocList`, `components/DocItem` | Lista/fila de documentos (modo upload o validación) |
+| `RequestFileList` | `components/RequestFileList` | Lista de solo lectura de archivos ya subidos al request (filtra por `data_name`), con previsualizar + descargar |
+| `DocSupportUploader` | `components/DocSupportUploader` | Bloque de carga de documentos de soporte |
+| `RecaptchaModal` | `components/RecaptchaModal` | Modal con reCAPTCHA v2 (checkbox); `onVerified(token)` al pasar. Site key en `VITE_RECAPTCHA_SITE_KEY`, verificación server-side en `/api/recaptcha/verify` |
+| Wrappers de campo | `components/fields/ZdsFields` | `ZdsInput/Select/Radio/Date/Textarea/CheckboxField/Segmented` |
+
+> Mantén esta tabla actualizada al crear/eliminar un componente propio.
+
+---
+
 ## Convenciones de código
 
-- Componentes de campo: `InputField`, `SelectField`, `RadioField`, `DateField`
+### Componentes de campo — `ZdsFields.tsx`
+
+Todos los campos de formulario y componentes Zurich DS se importan **exclusivamente** desde:
+
+```tsx
+import { ZdsInput, ZdsSelect, ZdsRadio, ZdsDate, ZdsTextarea,
+         ZdsCheckboxField, ZdsSegmented, ZdsStatusBadge,
+         ZrButton, ZrIcon, ZrModal, ZrForm, ZrCard, ZrTable, ZrAlert } from '../../components/fields/ZdsFields';
+```
+
+**Nunca importar directamente de `@zurich/web-components/react/...` en los screens.**
+
+#### Bootstrap y registro de ZDS (dos únicos puntos autorizados)
+
+Todo `@zurich/*` se consume desde dos módulos, enforced por ESLint (`no-restricted-imports`); cualquier otro import directo es error:
+
+- **`zds-setup.ts`** — assets globales del DS: `base.css` (tokens) + `javascript.js` (comportamientos CSS-components). Se importa una vez en `main.tsx`, antes de `shared.css`.
+- **`components/fields/ZdsFields.tsx`** — componentes. Importar un wrapper React **auto-registra** su web-component (`z-*`) de forma idempotente (`registerComponent` guarda con `customElements.get()`): el registro ocurre una sola vez, al primer render, y nunca lanza "already defined".
+
+Para habilitar un `z-*` nuevo: re-exportar su wrapper en `ZdsFields` (queda registrado al importarlo). No hay registro manual ni `customElements.define` propio.
+
+**ZDS vendorizado (desde jul-2026):** `@zurich/web-components` y `@zurich/css-components` (0.8.1)
+ya no vienen del registro npm público — el ZDS DevKit fue decomisionado (31-dic-2025) y ambos
+paquetes están **vendorizados** como `.tgz` en `frontend/vendor/`, referenciados en
+`frontend/package.json` via `file:vendor/*.tgz`. Ambos llevan un **parche** que reemplaza su
+`dist/react/jsx-runtime.js` (ESM y CJS) por un shim que usa el jsx-runtime real de React en vez
+de una copia congelada de React 18 (necesario para React 19 — ver `frontend/vendor/README.md`
+para el detalle completo y cómo reproducir el parche). **No actualizar estos `.tgz` a mano ni
+correr `npm update` sobre `@zurich/*`** — no hay versión nueva que instalar (el paquete está
+descontinuado) y una actualización involuntaria perdería el parche.
+
+| Wrapper | Componente Zurich | Cuándo usar |
+|---|---|---|
+| `ZdsInput` | `ZrTextInput` + Controller | Texto, email, tel — editable o readOnly |
+| `ZdsSelect` | `ZrSelect` + Controller | Dropdown con opciones (con/sin búsqueda) |
+| `ZdsRadio` | `ZrRadioSelect` + Controller | Grupo de radio buttons |
+| `ZdsDate` | `ZrDateInput` + Controller | Selector de fecha |
+| `ZdsTextarea` | `ZrTextarea` + Controller | Texto multilínea |
+| `ZdsCheckboxField` | `ZrCheckbox` + Controller | Checkbox booleano |
+| `ZdsSegmented` | `ZrSegmentedControl` + Controller | Toggle segmentado (SÍ/NO, etc.) |
+| `ZdsStepper` | `ZrStepper` + Controller | Contador de pasos 1-based en `[1, steps]` (wizard/paginador) |
+| `ZdsCalendar` | `ZrCalendar` + Controller | Calendario inline (grilla de mes), modelo ISO `YYYY-MM-DD` |
+| `ZdsStatusBadge` | `ZrBadge` | Píldora de estado por variante (`success`/`danger`/`info`/`neutral`) |
+| Re-exports directos | — | `ZrButton`, `ZrIcon`, `ZrModal`, `ZrForm`, `ZrCard`, `ZrTabs`, `ZrTable`, `ZrAlert`, `ZrBadge`, `ZrChip`, `ZrTag`, `ZrProgressBar`, `ZrFileInput`, `ZrSegmentedControl`, `ZrSidebar`, `ZrTile`, `ZrTooltip`, `ZrInputGroup`, `ZrFieldset`, `ZrStepper`, `ZrCalendar`, `ZrLoader` — componentes DS que no requieren Controller |
+
+### Patrón de formulario (react-hook-form + ZdsFields)
+
+```tsx
+const { control, handleSubmit, reset, formState: { errors } } = useForm<MiFormData>();
+
+// Los wrappers ZdsXxx usan Controller internamente:
+<ZdsInput
+  name="campo"
+  control={control}
+  label="Mi Campo"
+  rules={{ required: 'Campo requerido' }}
+  required
+  error={errors.campo?.message}
+/>
+```
+
+- `control` reemplaza a `register` para todos los campos ZDS.
+- `register` solo se usa para inputs nativos (ej: `<input type="file">`).
+- Pre-población desde PM4: `reset(task.data)` actualiza todos los campos en una sola llamada.
+
+### Otras convenciones
+
 - `FormSection` para las secciones con header azul
+- Indicadores de carga: usar `ZrLoader` del DS (dimensionable con `--z-loader--size`). No crear spinners CSS custom. El posicionamiento (overlay full-screen) sí es layout propio (`.loading-overlay`).
 - `useTask()` maneja loading / error / submitting — siempre mostrar estos estados
-- CSS scoped por pantalla: **nunca** estilos globales fuera de `styles.css` de la pantalla
+- Diseños DRY y ZurichDS: seguir la **Jerarquía de decisión de UI** (arriba). El **layout** se hace con primitivos DS (`z-flex`/`z-align`/`z-grid`), no con `display:flex` a mano; los **elementos** con componentes propios o del DS vía `ZdsFields`. No se permiten `styles.css` locales ni estilos en línea *ad-hoc*. [shared.css](file:///g:/DockerProys/CLAUDEPM4Copia/pm4-app/frontend/src/shared.css) es la única hoja de estilos global y queda reservada a: tablas editables, cards/secciones con estilo de dominio, tipografías (`Capt-12`, `Capt-14`) y grids de campos (`form-row.cols-*`) — siempre con tokens. Las píldoras de estado usan `ZdsStatusBadge` (no clases `.chip`).
 - `OPTIONS` en `variables.ts` usan `as const` → pasarlos directamente a los campos (aceptan `readonly`)
 - Componente principal < 300 líneas; secciones grandes van como funciones locales en el mismo archivo o archivos separados en la misma carpeta
+- **Convención `_desc` (campos de colección):** todo campo respaldado por una colección PM4 guarda el **código** y viaja con una variable compañera `<campo>_desc` con la descripción legible (p.ej. `qd_strChannel="13"` + `qd_strChannel_desc="Internet"`). Se sincroniza con `useSyncDesc(form, campo, options)` (`core/useCollection.ts`) junto al `useCollection` del campo; el resolver de solo lectura es `descOf(options, code)`. Detalle completo en `screens/atencion-cliente/quejas-directas/fields/MAPEO_qd_old_new.md`.
 
 ### Datos pre-cargados desde PM4
 
@@ -312,15 +396,15 @@ Componentes PM4 que existen: `FormInput`, `FormMultiColumn`, `FormHtmlViewer`, `
 
 ---
 
-## CSS Zurich — Variables de color
+## CSS Zurich — Color y tokens (FUENTE DE VERDAD)
 
-```css
---zurich-blue:   #2167AE
---zurich-green:  #0CA442
---zurich-red:    #EC5962
---zurich-bg:     #f7f9fc
---zurich-border: #e5e7eb
-```
+**Todos los colores provienen de los tokens de `@zurich/css-components`** (importado en `main.tsx` vía `base.css`). **Prohibido hex/rgba crudo** en CSS o en estilos inline `.tsx` — usar siempre `var(--...)`.
+
+- **Tokens del DS** (no redefinir): `--zc-*` (color), `--zg-*` (grises, incl. `--zg-white` #FFF, `--zg-black` #000, `--zg-white-zurich` #ECEEEF), `--zs-*` (espaciado), `--zf-*` (tipografía).
+- **Alias semánticos del proyecto** (en `shared.css :root`, todos apuntan a tokens DS): `--z-blue`, `--z-blue-dark`, `--z-blue-light`, `--z-green`, `--z-red`, `--z-orange`, `--z-bg`, `--z-border`, `--z-text`, `--z-muted`, `--z-card-shadow`.
+- **Transparencias** → `color-mix(in srgb, var(--token) N%, transparent)`, nunca `rgba()` con números.
+- **Escala real del DS:** las familias `--zc-{moss,peach,lemon}-*` usan pasos `20/40/60/80/aa/aaa` (NO existen `-10`/`-30`); `--zc-blue-sky-*` usa `10/25/40/80/aa`. Referenciar un paso inexistente rompe el color (cae a `unset`).
+- **Excepciones documentadas** (únicos colores sin token DS, centralizados en `shared.css :root`): `--z-card-border` (#DDE3EC), `--z-warning-deep` (#B8860B), `--z-modal-backdrop` (#0B1B3C).
 
 Fuente corporativa: `ZurichSans-Regular.ttf` desde `https://bpm.beesmart.ec/fonts/zurich/`
 
@@ -336,14 +420,23 @@ Solo leer esos archivos si el usuario lo pide — no asumir cuál usar.
 
 ## Referencia de componentes Zurich — OBLIGATORIO
 
-Antes de generar cualquier componente o pantalla nueva, **siempre leer**:
+Antes de generar cualquier pantalla nueva, leer **estas dos referencias de consumo**
+(son la fuente de verdad rápida; reemplazan la lectura del índice para construir):
 
 ```
-outputs/zurich-index.md   (relativo a pm4-app/)
+outputs/zds-cheatsheet.md       ← qué componentes/props EXISTEN (función→componente, enums, kebab, patrones)
+outputs/shared-css-catalog.md   ← qué clases CSS ya existen (estructura, grid, tipografía) antes de escribir CSS
 ```
 
-Este archivo contiene las bases de diseño, componentes disponibles y convenciones visuales de la aplicación.
-No crear componentes sin haberlo leído primero en la conversación actual.
+**`outputs/zurich-index.md` NO es lectura obligatoria.** Es el meta-índice para
+*documentar* componentes DS nuevos (convertir copy-paste de la web a fichas
+`outputs/react/...`). **Léelo solo cuando realmente lo necesites:** vas a incorporar un
+componente DS que aún no está en la fachada `ZdsFields` ni en el cheat-sheet — y en ese
+caso, primero DETENTE y consulta al usuario antes de documentarlo.
+
+**Referencia visual viva:** `?screen=ds-catalog` (componente `screens/ds-catalog/DsCatalog.tsx`)
+renderiza cada componente de la fachada con sus variantes — úsalo como **molde de uso**
+cuando no exista una pantalla análoga que clonar, y para detectar regresiones.
 
 ---
 

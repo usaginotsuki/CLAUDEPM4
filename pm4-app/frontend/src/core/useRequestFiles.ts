@@ -3,85 +3,63 @@ import pm4 from '../api/pm4Client';
 
 export interface Pm4File {
   id: number;
-  name: string;
   file_name: string;
-  custom_properties?: {
-    data_name?: string;
-    [key: string]: unknown;
-  };
   mime_type: string;
   size: number;
   created_at: string;
   updated_at: string;
+  // PM4 guarda el data_name del campo que originó el archivo dentro de custom_properties.
+  custom_properties?: Record<string, unknown>;
 }
 
-export function useRequestFiles(
-  requestId: number | null | undefined,
-  parentRequestId?: number | null,
-) {
+export function useRequestFiles(in_intRequestId: number | null | undefined) {
   const [files, setFiles] = useState<Pm4File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!requestId) return;
+    // Sin request no hay nada que consultar
+    if (!in_intRequestId) return;
     setLoading(true);
     setError(null);
 
-    const fetches = [
-      pm4.get(`/requests/${requestId}/files`),
-      ...(parentRequestId ? [pm4.get(`/requests/${parentRequestId}/files`)] : []),
-    ];
-
-    Promise.all(fetches)
-      .then((responses) => {
-        const all = responses.flatMap((r) =>
-          Array.isArray(r.data) ? r.data : (r.data?.data ?? [])
-        ) as Pm4File[];
-        // Deduplicar por id
-        const seen = new Set<number>();
-        const deduped = all.filter((f) => {
-          if (seen.has(f.id)) return false;
-          seen.add(f.id);
-          return true;
-        });
-        console.log(`[useRequestFiles] request_id=${requestId} parent=${parentRequestId ?? '-'} → ${deduped.length} archivos (raw):`, responses[0].data);
-        console.log(`[useRequestFiles] keys del primer archivo:`, deduped[0] ? Object.keys(deduped[0] as object) : []);
-        setFiles(deduped);
+    // Pedimos los archivos asociados al request
+    pm4.get(`/requests/${in_intRequestId}/files`)
+      .then((in_objResp) => {
+        // PM4 puede devolver { data: [...] } o directamente un array
+        const lstFiles: Pm4File[] = Array.isArray(in_objResp.data) ? in_objResp.data : (in_objResp.data?.data ?? []);
+        console.log(`[useRequestFiles] request_id=${in_intRequestId} → ${lstFiles.length} archivos`, lstFiles.map(in_objFile => in_objFile.file_name));
+        setFiles(lstFiles);
       })
-      .catch((e) => {
-        const msg = e.response?.data?.message ?? e.message;
-        console.error('[useRequestFiles] Error:', msg);
-        setError(msg);
+      .catch((in_excError) => {
+        // Guardamos el mensaje de error para mostrarlo
+        const strMsg = in_excError.response?.data?.message ?? in_excError.message;
+        console.error('[useRequestFiles] Error:', strMsg);
+        setError(strMsg);
       })
       .finally(() => setLoading(false));
-  }, [requestId, parentRequestId]);
+  }, [in_intRequestId]);
 
   return { files, loading, error };
 }
 
-/** Extrae el parent_request_id del _request del task data (subprocesos PM4) */
-export function resolveParentRequestId(taskData: Record<string, unknown>): number | null {
-  const req = taskData['_request'] as Record<string, unknown> | undefined;
-  const pid = req?.['parent_request_id'];
-  if (typeof pid === 'number') return pid;
-  if (typeof pid === 'string') { const n = parseInt(pid, 10); return isNaN(n) ? null : n; }
-  return null;
-}
-
 /** Extrae un file_id de un campo output de PM4 (puede ser number, string, u objeto {id}) */
-export function resolveFileId(value: unknown): number | null {
-  if (!value) return null;
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    const n = parseInt(value, 10);
-    return isNaN(n) ? null : n;
+export function resolveFileId(in_genValue: unknown): number | null {
+  // Sin valor no hay id que resolver
+  if (!in_genValue) return null;
+  // Si ya es numero lo devolvemos directo
+  if (typeof in_genValue === 'number') return in_genValue;
+  // Si es texto intentamos convertirlo a entero
+  if (typeof in_genValue === 'string') {
+    const intParsed = parseInt(in_genValue, 10);
+    return isNaN(intParsed) ? null : intParsed;
   }
-  if (typeof value === 'object') {
-    const obj = value as Record<string, unknown>;
-    if (obj.id) return resolveFileId(obj.id);
+  // Si es objeto buscamos el id dentro
+  if (typeof in_genValue === 'object') {
+    const dicValue = in_genValue as Record<string, unknown>;
+    if (dicValue.id) return resolveFileId(dicValue.id);
     // Array con un elemento
-    if (Array.isArray(value) && value.length > 0) return resolveFileId(value[0]);
+    if (Array.isArray(in_genValue) && in_genValue.length > 0) return resolveFileId(in_genValue[0]);
   }
   return null;
 }
