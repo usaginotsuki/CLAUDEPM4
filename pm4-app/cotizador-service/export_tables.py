@@ -12,148 +12,140 @@ TEMPLATE = os.path.normpath(os.path.join(HERE, '..', 'frontend', 'src', 'resourc
 OUTPUT   = os.path.join(HERE, 'tables.json')
 
 print(f'Leyendo {TEMPLATE}…')
-# Abrimos el libro de Excel con los valores ya calculados
-objWb = openpyxl.load_workbook(TEMPLATE, data_only=True)
+wb = openpyxl.load_workbook(TEMPLATE, data_only=True)
 
-dicTables = {}
+tables = {}
 
 # ── D&O ───────────────────────────────────────────────────────────────────────
-objWs = objWb["Configuraciond&o"]
+ws = wb["Configuraciond&o"]
 
 # Límites disponibles (fila 34, cols D-P)
-lstDyoLimits = []
-for intCol in range(4, 17):
-    genValue = objWs.cell(34, intCol).value
-    if genValue is not None:
-        lstDyoLimits.append(genValue)
+dyo_limites = []
+for col in range(4, 17):
+    v = ws.cell(34, col).value
+    if v is not None:
+        dyo_limites.append(v)
 
 # Matriz de primas: fila 35-43, col C = facturación label, cols D-P = primas
-lstDyoMatrix = []
-for intRow in range(35, 44):
-    strBilling = objWs.cell(intRow, 3).value
-    if strBilling is None:
+dyo_matrix = []
+for row in range(35, 44):
+    fac = ws.cell(row, 3).value
+    if fac is None:
         continue
-    lstPremiums = []
-    for intCol in range(4, 4 + len(lstDyoLimits)):
-        genValue = objWs.cell(intRow, intCol).value
-        lstPremiums.append(None if (genValue is None or str(genValue) == 'N/A') else float(genValue))
-    lstDyoMatrix.append({'fac': strBilling, 'primas': lstPremiums})
+    primas = []
+    for col in range(4, 4 + len(dyo_limites)):
+        v = ws.cell(row, col).value
+        primas.append(None if (v is None or str(v) == 'N/A') else float(v))
+    dyo_matrix.append({'fac': fac, 'primas': primas})
 
 # NC/Anexo: fila 17-29, col B=límite, col C=límite_nc, col D=deducible
-dicDyoNc = {}
-for intRow in range(17, 30):
-    intLimit = objWs.cell(intRow, 2).value
-    intLimitNc = objWs.cell(intRow, 3).value
-    intDeductible = objWs.cell(intRow, 4).value
-    if intLimit is not None:
-        dicDyoNc[str(int(intLimit))] = {
-            'limite_nc': int(intLimitNc) if intLimitNc else None,
-            'deducible': int(intDeductible)    if intDeductible    else None,
+dyo_nc = {}
+for row in range(17, 30):
+    lim = ws.cell(row, 2).value
+    lim_nc = ws.cell(row, 3).value
+    ded    = ws.cell(row, 4).value
+    if lim is not None:
+        dyo_nc[str(int(lim))] = {
+            'limite_nc': int(lim_nc) if lim_nc else None,
+            'deducible': int(ded)    if ded    else None,
         }
 
-dicTables['dyo'] = {
-    'limites': [int(genLimit) for genLimit in lstDyoLimits],
-    'matrix': lstDyoMatrix,
-    'nc': dicDyoNc,
+tables['dyo'] = {
+    'limites': [int(x) for x in dyo_limites],
+    'matrix': dyo_matrix,
+    'nc': dyo_nc,
 }
-print(f'  D&O: {len(lstDyoMatrix)} filas × {len(lstDyoLimits)} límites')
+print(f'  D&O: {len(dyo_matrix)} filas × {len(dyo_limites)} límites')
 
 # ── CC / Infidelidad ──────────────────────────────────────────────────────────
-objWsCc = objWb['Nuevas Primas CYBER']
+ws_cc = wb['Nuevas Primas CYBER']
 
-# Recorremos las filas para leer las primas de CC
-dicCcPrimas = {}
-for intRow in range(42, 600):
-    genKey = objWsCc.cell(intRow, 5).value
-    genValue = objWsCc.cell(intRow, 6).value
-    if genKey is None:
+cc_primas = {}
+for row in range(42, 600):
+    k = ws_cc.cell(row, 5).value
+    v = ws_cc.cell(row, 6).value
+    if k is None:
         break
-    if genValue is not None and str(genValue) not in ('N/A', '-', ''):
-        dicCcPrimas[str(genKey)] = float(genValue)
+    if v is not None and str(v) not in ('N/A', '-', ''):
+        cc_primas[str(k)] = float(v)
 
-# Leemos los deducibles de CC
-dicCcDed = {}
-for intRow in range(4, 12):
-    genKey = objWsCc.cell(intRow, 22).value
-    genValue = objWsCc.cell(intRow, 23).value
-    if genKey is None:
+cc_ded = {}
+for row in range(4, 12):
+    k = ws_cc.cell(row, 22).value
+    v = ws_cc.cell(row, 23).value
+    if k is None:
         break
-    dicCcDed[str(genKey)] = str(genValue) if genValue is not None else None
+    cc_ded[str(k)] = str(v) if v is not None else None
 
-dicTables['cc'] = {'primas': dicCcPrimas, 'deducibles': dicCcDed}
-print(f'  CC: {len(dicCcPrimas)} primas, {len(dicCcDed)} deducibles')
+tables['cc'] = {'primas': cc_primas, 'deducibles': cc_ded}
+print(f'  CC: {len(cc_primas)} primas, {len(cc_ded)} deducibles')
 
 # ── PDySI / Cyber (v2: ENTRADAS B27-B30, SALIDAS R23-R25) ────────────────────
-objWsCy = objWb['PRIMAS']
+ws_cy = wb['PRIMAS']
 
-# Recorremos las filas para leer las primas de PDySI
-dicCyPrimas = {}
-for intRow in range(18, 60):
-    genKey = objWsCy.cell(intRow, 1).value
-    genValue = objWsCy.cell(intRow, 4).value
-    if genKey is None:
+cy_primas = {}
+for row in range(18, 60):
+    k = ws_cy.cell(row, 1).value
+    v = ws_cy.cell(row, 4).value
+    if k is None:
         break
-    if genValue is not None and str(genValue) not in ('N/A', '-', ''):
-        try: dicCyPrimas[str(genKey)] = float(genValue)
+    if v is not None and str(v) not in ('N/A', '-', ''):
+        try: cy_primas[str(k)] = float(v)
         except: pass
 
-# Leemos los deducibles de PDySI
-dicCyDed = {}
-for intRow in range(57, 100):
-    genKey = objWsCy.cell(intRow, 1).value
-    genValue = objWsCy.cell(intRow, 4).value
-    if genKey is None:
+cy_ded = {}
+for row in range(57, 100):
+    k = ws_cy.cell(row, 1).value
+    v = ws_cy.cell(row, 4).value
+    if k is None:
         break
-    if genValue is not None and str(genValue) not in ('N/A', '-', ''):
-        try: dicCyDed[str(genKey)] = float(genValue)
+    if v is not None and str(v) not in ('N/A', '-', ''):
+        try: cy_ded[str(k)] = float(v)
         except: pass
 
-dicTables['pdysi'] = {'primas': dicCyPrimas, 'deducibles': dicCyDed}
-print(f'  PDySI: {len(dicCyPrimas)} primas, {len(dicCyDed)} deducibles')
+tables['pdysi'] = {'primas': cy_primas, 'deducibles': cy_ded}
+print(f'  PDySI: {len(cy_primas)} primas, {len(cy_ded)} deducibles')
 
 # ── PI (v2: 3 alternativas, key = {fac}{deducible}{limite}) ───────────────────
-dicPiTables = {}
-for strSectorName, strSheetName in [('ABOGADOS', 'ABOGADOS'), ('ADMINISTRADORES', 'ADMIN PH'), ('CONTADORES', 'CONTADORES')]:
-    objWsPi = objWb[strSheetName]
-    # Construimos el lookup por llave para este sector
-    dicLookup = {}
-    for intRow in range(1, 800):
-        genKey   = objWsPi.cell(intRow, 6).value   # col F = llave {fac}{ded}{lim}
-        dblPrima = objWsPi.cell(intRow, 5).value   # col E = prima
-        if genKey and dblPrima and str(dblPrima) not in ('N/A', '-', 'PRIMA'):
-            try: dicLookup[str(genKey)] = float(dblPrima)
+pi_tables = {}
+for sector_name, sheet_name in [('ABOGADOS', 'ABOGADOS'), ('ADMINISTRADORES', 'ADMIN PH'), ('CONTADORES', 'CONTADORES')]:
+    ws_pi = wb[sheet_name]
+    lookup = {}
+    for row in range(1, 800):
+        key   = ws_pi.cell(row, 6).value   # col F = llave {fac}{ded}{lim}
+        prima = ws_pi.cell(row, 5).value   # col E = prima
+        if key and prima and str(prima) not in ('N/A', '-', 'PRIMA'):
+            try: lookup[str(key)] = float(prima)
             except: pass
-    dicPiTables[strSectorName] = dicLookup
-    print(f'  PI/{strSectorName}: {len(dicLookup)} entradas')
+    pi_tables[sector_name] = lookup
+    print(f'  PI/{sector_name}: {len(lookup)} entradas')
 
-dicTables['pi'] = dicPiTables
+tables['pi'] = pi_tables
 
 # Mapeo limit→deducible por sector (para auto-derivar deducible cuando no se pasa)
 # Formato: {sector: {limite_str: deducible}}
-dicPiDedMap = {}
-for strSectorName, strSheetName in [('ABOGADOS', 'ABOGADOS'), ('ADMINISTRADORES', 'ADMIN PH'), ('CONTADORES', 'CONTADORES')]:
-    objWsPi = objWb[strSheetName]
-    # Guardamos el primer deducible encontrado por cada limite
-    dicMapping = {}
-    for intRow in range(1, 800):
-        genKey   = objWsPi.cell(intRow, 6).value   # llave
-        dblPrima = objWsPi.cell(intRow, 5).value
-        intDeductible   = objWsPi.cell(intRow, 3).value   # col C = deducible
-        intLimit   = objWsPi.cell(intRow, 4).value   # col D = limite
-        if genKey and dblPrima and intDeductible and intLimit:
+pi_ded_map = {}
+for sector_name, sheet_name in [('ABOGADOS', 'ABOGADOS'), ('ADMINISTRADORES', 'ADMIN PH'), ('CONTADORES', 'CONTADORES')]:
+    ws_pi = wb[sheet_name]
+    mapping = {}
+    for row in range(1, 800):
+        key   = ws_pi.cell(row, 6).value   # llave
+        prima = ws_pi.cell(row, 5).value
+        ded   = ws_pi.cell(row, 3).value   # col C = deducible
+        lim   = ws_pi.cell(row, 4).value   # col D = limite
+        if key and prima and ded and lim:
             try:
-                strLimit = str(int(intLimit))
-                if strLimit not in dicMapping:   # primer deducible encontrado para ese límite
-                    dicMapping[strLimit] = int(intDeductible)
+                lim_str = str(int(lim))
+                if lim_str not in mapping:   # primer deducible encontrado para ese límite
+                    mapping[lim_str] = int(ded)
             except: pass
-    dicPiDedMap[strSectorName] = dicMapping
-    print(f'  PI deducibles/{strSectorName}: {len(dicMapping)} entradas')
+    pi_ded_map[sector_name] = mapping
+    print(f'  PI deducibles/{sector_name}: {len(mapping)} entradas')
 
-dicTables['pi_ded_map'] = dicPiDedMap
+tables['pi_ded_map'] = pi_ded_map
 
 # ── Guardar ───────────────────────────────────────────────────────────────────
-# Guardamos todas las tablas en el archivo JSON final
-with open(OUTPUT, 'w', encoding='utf-8') as objFile:
-    json.dump(dicTables, objFile, ensure_ascii=False)
+with open(OUTPUT, 'w', encoding='utf-8') as f:
+    json.dump(tables, f, ensure_ascii=False)
 
 print(f'\nOK Exportado a {OUTPUT} ({os.path.getsize(OUTPUT) // 1024} KB)')
